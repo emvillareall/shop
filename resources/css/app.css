@@ -1,0 +1,362 @@
+@import "tailwindcss";
+
+@theme {
+    --color-brand-50: #f8f2fb;
+    --color-brand-100: #f0e3f6;
+    --color-brand-200: #e0c8ec;
+    --color-brand-300: #cba2de;
+    --color-brand-400: #b17fd0;
+    --color-brand-500: #975fbe;
+    --color-brand-600: #7d479f;
+    --color-brand-700: #64397d;
+    --color-brand-800: #4f2e62;
+    --color-brand-900: #3f264d;
+}
+
+@layer base {
+    body {
+        @apply bg-slate-100 text-slate-800 antialiased;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    .container {
+        @apply mx-auto w-full max-w-7xl px-4;
+    }
+
+    .container-fluid {
+        @apply w-full px-4;
+    }
+
+    .row {
+        @apply flex flex-wrap -mx-2;
+    }
+
+    .col, .col-4, .col-8, .col-md-7, .col-sm-12 {
+        @apply w-full px-2;
+    }
+
+    .col-4 {
+        @apply md:w-1/3;
+    }
+
+    .col-8 {
+        @apply md:w-2/3;
+    }
+
+    .col-md-7 {
+        @apply md:w-7/12;
+    }
+
+    .card {
+        @apply rounded-lg border border-slate-200 bg-white shadow-sm;
+    }
+
+    .card-header {
+        @apply border-b border-slate-200 px-4 py-3 font-semibold;
+    }
+
+    .card-body {
+        @apply px-4 py-4;
+    }
+
+    .table {
+        @apply w-full text-sm;
+    }
+
+    .table th {
+        @apply border-b border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600;
+    }
+
+    .table td {
+        @apply border-b border-slate-100 px-3 py-2 align-middle;
+    }
+
+    .table-responsive {
+        @apply overflow-x-auto;
+    }
+
+    .form-control,
+    .form-select,
+    select,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    textarea {
+        @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-200;
+    }
+
+    .btn {
+        @apply inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition;
+    }
+
+    .btn-sm {
+        @apply px-2.5 py-1.5 text-xs;
+    }
+
+    .btn-primary {
+        @apply border-brand-600 bg-brand-600 text-white hover:bg-brand-700;
+    }
+
+    .btn-secondary {
+        @apply border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+    }
+
+    .btn-success {
+        @apply border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700;
+    }
+
+    .btn-danger {
+        @apply border-rose-600 bg-rose-600 text-white hover:bg-rose-700;
+    }
+
+    .btn-warning {
+        @apply border-amber-500 bg-amber-500 text-slate-900 hover:bg-amber-600;
+    }
+
+    .btn-info {
+        @apply border-cyan-600 bg-cyan-600 text-white hover:bg-cyan-700;
+    }
+
+    .btn-dark {
+        @apply border-slate-700 bg-slate-700 text-white hover:bg-slate-800;
+    }
+
+    .alert {
+        @apply mb-4 rounded-md border px-3 py-2 text-sm;
+    }
+
+    .alert-success {
+        @apply border-emerald-200 bg-emerald-50 text-emerald-700;
+    }
+
+    .alert-danger {
+        @apply border-rose-200 bg-rose-50 text-rose-700;
+    }
+
+    .badge {
+        @apply inline-flex rounded-full px-2 py-1 text-xs font-semibold;
+    }
+
+    .bg-success {
+        @apply bg-emerald-100 text-emerald-700;
+    }
+
+    .bg-warning {
+        @apply bg-amber-100 text-amber-700;
+    }
+
+    .shop-page-bg {
+        @apply bg-purple-50;
+    }
+
+    .store-shell {
+        @apply mx-auto max-w-7xl space-y-8 rounded-2xl bg-purple-50 p-2;
+    }
+
+    .store-hero {
+        @apply rounded-2xl border border-purple-100 bg-white px-6 py-7 shadow-sm;
+    }
+
+    .store-category-head {
+        @apply rounded-2xl border border-purple-100 bg-white px-6 py-6 shadow-sm;
+    }
+
+    .store-category-title {
+        @apply text-2xl font-bold text-purple-900;
+    }
+
+    .store-category-copy {
+        @apply mt-1 text-sm text-slate-600;
+    }
+
+    .store-kicker {
+        @apply text-xs font-semibold uppercase tracking-[0.2em] text-purple-600;
+    }
+
+    .store-title {
+        @apply mt-2 text-3xl font-extrabold text-purple-900;
+    }
+
+    .store-subtitle {
+        @apply mt-2 max-w-2xl text-sm text-slate-600;
+    }
+
+    .store-header-row {
+        @apply flex items-center justify-between;
+    }
+
+    .store-toolbar {
+        @apply flex items-center justify-between rounded-xl border border-purple-100 bg-white px-4 py-3;
+    }
+
+    .store-toolbar-actions {
+        @apply flex items-center gap-2;
+    }
+
+    .store-view-pill {
+        @apply inline-flex rounded-md border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700;
+    }
+
+    .store-section-title {
+        @apply text-2xl font-bold text-purple-900;
+    }
+
+    .store-section-subtitle {
+        @apply text-sm text-slate-500;
+    }
+
+    .store-cart-btn {
+        @apply inline-flex items-center rounded-full bg-purple-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-purple-700;
+    }
+
+    .store-grid {
+        @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4;
+    }
+
+    .store-card {
+        @apply w-full overflow-hidden rounded-xl border border-purple-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md;
+    }
+
+    .store-image-wrap {
+        @apply relative h-56 overflow-hidden bg-purple-50;
+    }
+
+    .store-image {
+        @apply h-full w-full object-cover;
+    }
+
+    .store-badge {
+        @apply absolute right-3 top-3 rounded-md bg-purple-600 px-2.5 py-1 text-[11px] font-semibold text-white;
+    }
+
+    .store-card-body {
+        @apply flex min-h-[180px] flex-col p-4;
+    }
+
+    .store-product-name {
+        @apply line-clamp-2 min-h-[52px] text-[1.15rem] font-semibold leading-6 text-slate-900;
+    }
+
+    .store-price-row {
+        @apply mt-2 flex items-end gap-2;
+    }
+
+    .store-current-price {
+        @apply text-2xl font-bold text-purple-700;
+    }
+
+    .store-old-price {
+        @apply pb-1 text-xs font-semibold text-slate-400 line-through;
+    }
+
+    .store-rating {
+        @apply mt-2 flex items-center gap-1;
+    }
+
+    .star-on {
+        @apply text-sm text-amber-400;
+    }
+
+    .star-off {
+        @apply text-sm text-slate-300;
+    }
+
+    .store-actions {
+        @apply mt-auto flex items-center justify-between pt-4;
+    }
+
+    .store-fav-btn {
+        @apply text-xl text-slate-400 transition hover:text-purple-600;
+    }
+
+    .store-fav-btn.is-active {
+        @apply text-purple-600;
+    }
+
+    .store-add-btn {
+        @apply rounded-full bg-purple-600 px-5 py-2 text-xs font-semibold text-white transition hover:bg-purple-700;
+    }
+
+    /* Legacy CRUD facelift (global, non-destructive) */
+    .content.container-fluid {
+        @apply mx-auto max-w-[1500px] px-3 md:px-5;
+    }
+
+    .content.container-fluid > .row,
+    .content.container-fluid .row {
+        @apply mx-0 w-full;
+    }
+
+    .content.container-fluid [class^="col-"],
+    .content.container-fluid [class*=" col-"] {
+        @apply w-full px-0;
+    }
+
+    .card.card-default {
+        @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
+    }
+
+    .card.card-default > .card-header {
+        @apply border-b border-slate-200 bg-slate-50 px-5 py-4;
+    }
+
+    .card.card-default > .card-header .card-title {
+        @apply text-lg font-semibold text-slate-900;
+    }
+
+    .card.card-default > .card-body {
+        @apply p-5;
+    }
+
+    .box.box-info,
+    .box.padding-1 {
+        @apply rounded-xl border border-slate-200 bg-slate-50/60 p-4 md:p-5;
+    }
+
+    .box-body {
+        @apply grid grid-cols-1 gap-4 md:grid-cols-2;
+    }
+
+    .box-body .form-group {
+        @apply m-0;
+    }
+
+    .box-body .form-group label,
+    .box-body .form-label,
+    .box-body .control-label {
+        @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600;
+    }
+
+    .box-body .invalid-feedback {
+        @apply mt-1 text-xs font-medium text-rose-600;
+    }
+
+    .box-footer,
+    .box-footer.mt20 {
+        @apply mt-5 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4;
+    }
+
+    .box-footer .btn,
+    .card-body .btn {
+        @apply rounded-lg;
+    }
+
+    .table > tbody > tr > td .btn,
+    .table td .btn {
+        @apply mb-1;
+    }
+
+    .content .table-responsive {
+        @apply rounded-xl border border-slate-200;
+    }
+
+    .content .table th {
+        @apply bg-slate-100;
+    }
+}
