@@ -63,13 +63,20 @@
                                 <td>
                                     <div class="flex flex-wrap gap-1">
                                         @if(!in_array($pago->estado, ['APROBADO', 'RECHAZADO']))
-                                            <form method="POST" action="{{ route('pagos.aprobar', $pago->id) }}">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-success"
-                                                        {{ (in_array($pago->metodo, ['paypal', 'payphone']) && !$providerConfirmed) ? 'disabled' : '' }}>
-                                                    Aprobar
+                                            @if(in_array($pago->metodo, ['paypal', 'payphone']) && !$providerConfirmed)
+                                                <button type="button"
+                                                        class="btn btn-sm btn-secondary"
+                                                        title="Pago bloqueado hasta confirmacion final del proveedor (webhook)">
+                                                    <i class="fa-solid fa-clock mr-1"></i>Esperando webhook
                                                 </button>
-                                            </form>
+                                            @else
+                                                <form method="POST" action="{{ route('pagos.aprobar', $pago->id) }}">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-success">
+                                                        Aprobar
+                                                    </button>
+                                                </form>
+                                            @endif
                                             <form method="POST" action="{{ route('pagos.rechazar', $pago->id) }}">
                                                 @csrf
                                                 <input type="hidden" name="observacion" value="Rechazado desde panel administrativo">

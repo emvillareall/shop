@@ -92,7 +92,12 @@ class PedidosTable extends Component
                 DB::raw("(select p.estado from pagos p where p.pedido_id = pedidos.id order by p.id desc limit 1) as pago_registrado_estado"),
                 DB::raw("(select p.metodo from pagos p where p.pedido_id = pedidos.id order by p.id desc limit 1) as pago_registrado_metodo")
             )
-            ->where('pedidos.estado_pedidos', '1');
+            ->where('pedidos.estado_pedidos', '1')
+            // Ventas de mostrador (POS) se gestionan en modulo Ventas, no en Pedidos.
+            ->where(function ($q) {
+                $q->whereNull('pedidos.codigo_pedido')
+                    ->orWhere('pedidos.codigo_pedido', 'not like', 'BF-POS-%');
+            });
 
         if ($this->todayOnly) {
             $query->whereDate('pedidos.created_at', now()->toDateString());

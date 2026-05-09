@@ -38,14 +38,6 @@
             @enderror
         </div>
 
-        <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="estado_pedido">Estado pedido</label>
-            <select id="estado_pedido" name="estado_pedido">
-                @foreach(['BORRADOR','PENDIENTE_PAGO','PAGO_EN_REVISION','PAGADO','EN_PREPARACION','DESPACHADO','ENTREGADO','CANCELADO','RECHAZADO','DEVUELTO'] as $estado)
-                    <option value="{{ $estado }}" {{ old('estado_pedido', $pedido->estado_pedido ?? 'PENDIENTE_PAGO') === $estado ? 'selected' : '' }}>{{ $estado }}</option>
-                @endforeach
-            </select>
-        </div>
 
         <div>
             <label class="mb-1 block text-sm font-semibold text-slate-700" for="estado_pago">Estado pago</label>
@@ -61,6 +53,15 @@
             <select id="estado_envio" name="estado_envio">
                 @foreach(['SIN_ENVIO','PENDIENTE','PREPARANDO','ENVIADO','ENTREGADO','NO_ENTREGADO'] as $estadoEnvio)
                     <option value="{{ $estadoEnvio }}" {{ old('estado_envio', $pedido->estado_envio ?? 'SIN_ENVIO') === $estadoEnvio ? 'selected' : '' }}>{{ $estadoEnvio }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div>
+            <label class="mb-1 block text-sm font-semibold text-slate-700" for="estado_pedido">Estado pedido</label>
+            <select id="estado_pedido" name="estado_pedido">
+                @foreach(['BORRADOR','PENDIENTE_PAGO','PAGO_EN_REVISION','PAGADO','EN_PREPARACION','DESPACHADO','ENTREGADO','CANCELADO','RECHAZADO','DEVUELTO'] as $estado)
+                    <option value="{{ $estado }}" {{ old('estado_pedido', $pedido->estado_pedido ?? 'PENDIENTE_PAGO') === $estado ? 'selected' : '' }}>{{ $estado }}</option>
                 @endforeach
             </select>
         </div>

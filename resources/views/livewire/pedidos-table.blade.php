@@ -78,9 +78,9 @@
                         <th>Descuento</th>
                         <th>Total</th>
                         <th>Productos</th>
-                        <th>Estado pedido</th>
                         <th>Estado pago</th>
                         <th>Estado envio</th>
+                        <th class="bg-brand-50 text-brand-800">Estado pedido</th>
                         <th>Acciones</th>
                     </tr>
                     </thead>
@@ -95,6 +95,7 @@
                             $estadoPedido = $pedido->estado_pedido ?: ($pedido->estado_url === 'ENVIADO' ? 'DESPACHADO' : 'PENDIENTE_PAGO');
                             $estadoPago = $pedido->estado_pago ?: 'SIN_PAGO';
                             $estadoEnvio = $pedido->estado_envio ?: ($pedido->estado_url === 'ENVIADO' ? 'ENVIADO' : 'PENDIENTE');
+                            $esPos = str_starts_with((string)($pedido->codigo_pedido ?? ''), 'BF-POS-');
                             $esSocial = str_starts_with((string)($pedido->codigo_pedido ?? ''), 'BF-ADM-')
                                 || !str_contains(strtolower((string)($pedido->descripcion ?? '')), 'en linea');
                             $tienePagoEcommerce = !empty($pedido->pago_registrado_estado);
@@ -126,10 +127,21 @@
                             <td>{{ $pedidos->firstItem() + $loop->index }}</td>
                             <td>
                                 <div class="font-medium">{{ $pedido->descripcion }}</div>
-                                @if($esSocial)
-                                    <span class="badge bg-primary mt-1">REDES SOCIALES</span>
+                                @if($esPos)
+                                    <span class="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-200">
+                                        <i class="fa-solid fa-cash-register text-[10px]"></i>
+                                        Venta mostrador
+                                    </span>
+                                @elseif($esSocial)
+                                    <span class="mt-2 inline-flex items-center gap-1 rounded-full bg-sky-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-sky-800 ring-1 ring-sky-200">
+                                        <i class="fa-solid fa-hashtag text-[10px]"></i>
+                                        Redes sociales
+                                    </span>
                                 @else
-                                    <span class="badge bg-dark mt-1">ECOMMERCE</span>
+                                    <span class="mt-2 inline-flex items-center gap-1 rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-800 ring-1 ring-violet-200">
+                                        <i class="fa-solid fa-store text-[10px]"></i>
+                                        Ecommerce
+                                    </span>
                                 @endif
                             </td>
                             <td>{{ $pedido->nombres_clientes }} {{ $pedido->apellidos_clientes }}</td>
@@ -143,15 +155,21 @@
                                 @else
                                     <span class="badge bg-secondary">Sin productos</span>
                                 @endif
+                                <div class="mt-2">
+                                    <a href="{{ route('detalle-pedidos.create', ['id' => $pedido->id, 'return_to' => url()->current()]) }}"
+                                       class="btn btn-sm btn-primary">
+                                        <i class="fa fa-box-open"></i>
+                                    </a>
+                                </div>
                             </td>
-                            <td><span class="badge {{ $pedidoBadge }}">{{ $labelsPedido[$estadoPedido] ?? str_replace('_', ' ', $estadoPedido) }}</span></td>
                             <td>
                                 <div class="flex items-center gap-2">
                                     <span class="badge {{ $pagoBadge }}">{{ $labelsPago[$estadoPago] ?? str_replace('_', ' ', $estadoPago) }}</span>
                                     @if($esSocial && $estadoPago !== 'APROBADO')
                                         <button type="button" class="btn btn-sm btn-warning"
+                                                title="Confirmar pago"
                                                 @click="pagoModalOpen = true; pagoPedidoCodigo='{{ addslashes($pedido->codigo_pedido ?: ('#'.$pedido->id)) }}'; pagoRuta='{{ route('pedidos.confirmar_pago_social', $pedido->id) }}'">
-                                            Confirmar pago
+                                            <i class="fa-solid fa-money-check-dollar"></i>
                                         </button>
                                     @elseif(!$esSocial && $tienePagoEcommerce)
                                         <span class="text-xs text-slate-500">Gestionado en Pagos</span>
@@ -161,17 +179,22 @@
                             <td>
                                 <div class="flex items-center gap-2">
                                     <span class="badge {{ $envioBadge }}">{{ $labelsEnvio[$estadoEnvio] ?? str_replace('_', ' ', $estadoEnvio) }}</span>
-                                    @if(($pedido->estado_envio ?? null) !== 'ENVIADO')
+                                    @if(($pedido->estado_envio ?? null) !== 'ENVIADO' && $pagoConfirmado && $tieneDetalles)
                                         <form method="POST" action="{{ route('estado_pedido', $pedido->id) }}">
                                             @csrf
-                                            <button type="submit" class="btn btn-sm btn-info"
-                                                    @disabled(!$pagoConfirmado || !$tieneDetalles)
-                                                    title="{{ !$pagoConfirmado ? 'Confirma el pago para enviar.' : (!$tieneDetalles ? 'Agrega productos al pedido para enviar.' : 'Marcar como enviado') }}">
+                                            <button type="submit" class="btn btn-sm btn-info" title="Marcar como enviado">
                                                 <i class="fa fa-paper-plane"></i>
                                             </button>
                                         </form>
+                                    @elseif(($pedido->estado_envio ?? null) !== 'ENVIADO')
+                                        <span class="text-xs text-slate-400" title="Disponible al confirmar pago y tener productos asignados">Bloqueado</span>
                                     @endif
                                 </div>
+                            </td>
+                            <td class="bg-brand-50/60">
+                                <span class="badge {{ $pedidoBadge }} !px-3 !py-1.5 !text-xs !font-bold !tracking-wide !shadow-sm">
+                                    {{ $labelsPedido[$estadoPedido] ?? str_replace('_', ' ', $estadoPedido) }}
+                                </span>
                             </td>
                             <td>
                                 <div class="flex flex-wrap gap-1">
@@ -184,7 +207,6 @@
                                     @endif
                                     <a class="btn btn-sm btn-success" href="{{ route('pedidos.edit',$pedido->id) }}"><i class="fa fa-fw fa-edit"></i></a>
                                     <a class="btn btn-sm btn-warning" href="{{ route('getPDF_pedidos',$pedido->id) }}" target="_blank"><i class="fa fa-fw fa-print"></i></a>
-                                    <a href="{{ route('detalle-pedidos.create', ['id' => $pedido->id, 'return_to' => url()->current()]) }}" class="btn btn-sm btn-primary"><i class="fa fa-box-open"></i></a>
                                     <a href="{{ route('detalle-pedidos.show', $pedido->id) }}" class="btn btn-sm btn-dark"><i class="fa fa-eye"></i></a>
                                     <form action="{{ route('pedidos.destroy',$pedido->id) }}" method="POST" onsubmit="return confirm('¿Eliminar pedido y restaurar stock?')">
                                         @csrf

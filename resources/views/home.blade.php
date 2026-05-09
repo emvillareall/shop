@@ -281,6 +281,10 @@
                     <button type="button" class="btn btn-primary w-full" @click="modalPagoOpen = true">
                         Configurar forma de pago
                     </button>
+                    <button type="submit" class="btn btn-dark w-full"
+                            :disabled="lineasPedido.length < 1 || (metodoPagoPos === 'transferencia' && !String(referenciaPagoPos || '').trim())">
+                        Confirmar venta
+                    </button>
                     <p class="text-xs text-slate-500">
                         Pago elegido: <span class="font-semibold uppercase text-slate-800" x-text="metodoPagoPos"></span>
                         <template x-if="metodoPagoPos === 'transferencia' && referenciaPagoPos">
@@ -357,7 +361,7 @@
 
                         <div class="flex flex-wrap gap-2">
                             <button type="submit" class="btn btn-primary w-full" :disabled="lineasPedido.length < 1 || (metodoPagoPos === 'transferencia' && !String(referenciaPagoPos || '').trim())">
-                                Guardar factura
+                                Confirmar venta
                             </button>
                         </div>
                     </aside>

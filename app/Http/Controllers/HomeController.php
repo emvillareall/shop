@@ -154,6 +154,7 @@ class HomeController extends Controller
             ]);
 
             $subtotal = 0.0;
+            $lineasProcesadas = 0;
             $totalesPorProducto = [];
 
             foreach ($lineasRaw as $linea) {
@@ -188,6 +189,7 @@ class HomeController extends Controller
                 $precio = (float) ($producto->precio_venta_producto ?? 0);
                 $subtotalLinea = $precio * $cantidad;
                 $subtotal += $subtotalLinea;
+                $lineasProcesadas++;
                 $totalesPorProducto[$productoId] = ($totalesPorProducto[$productoId] ?? 0) + $cantidad;
 
                 DetallePedido::query()->create([
@@ -217,12 +219,17 @@ class HomeController extends Controller
                 ]);
             }
 
-            $descuento = (float) ($validated['descuento_extra'] ?? 0);
-            $recargo = (float) ($validated['recargo_extra'] ?? 0);
-            $total = max(0, ($subtotal + $recargo) - $descuento);
+            if ($lineasProcesadas < 1) {
+                throw new \RuntimeException('No hay lineas de producto validas para facturar.');
+            }
+
+            $descuento = round((float) ($validated['descuento_extra'] ?? 0), 2);
+            $recargo = round((float) ($validated['recargo_extra'] ?? 0), 2);
+            $subtotalConRecargo = round($subtotal + $recargo, 2);
+            $total = round(max(0, $subtotalConRecargo - $descuento), 2);
 
             $pedido->update([
-                'subtotal_pedido' => $subtotal + $recargo,
+                'subtotal_pedido' => $subtotalConRecargo,
                 'descuentos_pedido' => $descuento,
                 'total_pedido' => $total,
             ]);
@@ -253,9 +260,9 @@ class HomeController extends Controller
                 [
                     'clientes_id' => $pedido->clientes_id,
                     'tienda_id' => $pedido->tienda_id,
-                    'subtotal' => $pedido->subtotal_pedido,
-                    'descuento' => $pedido->descuentos_pedido,
-                    'total' => $pedido->total_pedido,
+                    'subtotal' => $subtotalConRecargo,
+                    'descuento' => $descuento,
+                    'total' => $total,
                     'estado_venta' => $estadoPago === 'APROBADO' ? 'PAGADO' : 'PENDIENTE',
                     'fecha_venta' => now(),
                 ]

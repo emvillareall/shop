@@ -45,14 +45,18 @@
         <div class="flex min-h-[calc(100vh-4rem)]">
             <div class="fixed inset-0 z-40 bg-slate-900/50 md:hidden" x-show="sidebarOpen" x-transition.opacity @click="sidebarOpen = false"></div>
 
-            <aside class="fixed bottom-0 left-0 top-16 z-50 w-72 -translate-x-full overflow-y-auto border-r border-brand-200 bg-brand-50 px-4 py-5 transition-transform md:static md:top-auto md:block md:h-auto md:translate-x-0 md:overflow-visible md:shrink-0" :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'">
+            <aside class="fixed bottom-0 left-0 top-16 z-50 w-72 -translate-x-full overflow-y-auto border-r border-brand-200 bg-brand-50 px-4 py-5 transition-transform md:hidden" :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
                 <div class="mb-6 flex items-center justify-between md:hidden">
                     <span class="text-base font-bold text-brand-800">{{ config('app.name') }}</span>
                     <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-brand-200 text-brand-700" @click="sidebarOpen = false">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
-                <div class="md:sticky md:top-20 md:max-h-[calc(100vh-5.5rem)] md:overflow-y-auto md:pr-1">
+                @include('layouts.sidebar')
+            </aside>
+
+            <aside class="hidden w-72 shrink-0 border-r border-brand-200 bg-brand-50 md:block">
+                <div class="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto px-4 py-5">
                     @include('layouts.sidebar')
                 </div>
             </aside>
