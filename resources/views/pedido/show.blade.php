@@ -23,7 +23,39 @@
                     <div><span class="text-xs text-slate-500">Estado pago</span><div class="font-semibold">{{ $pedido->estado_pago ?? '-' }}</div></div>
                     <div><span class="text-xs text-slate-500">Estado envio</span><div class="font-semibold">{{ $pedido->estado_envio ?? '-' }}</div></div>
                     <div><span class="text-xs text-slate-500">Total</span><div class="font-semibold">${{ number_format((float)($pedido->total_pedido ?? 0), 2) }}</div></div>
+                    <div><span class="text-xs text-slate-500">Total abonado</span><div class="font-semibold text-emerald-700">${{ number_format((float)($totalAbonado ?? 0), 2) }}</div></div>
+                    <div><span class="text-xs text-slate-500">Saldo pendiente</span><div class="font-semibold text-amber-700">${{ number_format((float)($saldoPendiente ?? 0), 2) }}</div></div>
                 </div>
+
+                @if(($abonos ?? collect())->count() > 0)
+                    <div class="rounded-xl border border-slate-200 bg-white p-3">
+                        <div class="mb-2 text-sm font-semibold text-slate-700">Historial de abonos</div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Monto</th>
+                                    <th>Metodo</th>
+                                    <th>Referencia</th>
+                                    <th>Observacion</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach($abonos as $abono)
+                                    <tr>
+                                        <td>{{ optional($abono->fecha_abono)->format('Y-m-d H:i') }}</td>
+                                        <td>${{ number_format((float)$abono->monto, 2) }}</td>
+                                        <td class="uppercase">{{ $abono->metodo }}</td>
+                                        <td>{{ $abono->referencia ?: '-' }}</td>
+                                        <td>{{ $abono->observacion ?: '-' }}</td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
 
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
                     <div class="text-sm font-semibold text-slate-700">Formulario de cliente (reenvio)</div>
@@ -45,4 +77,3 @@
         </div>
     </div>
 @endsection
-

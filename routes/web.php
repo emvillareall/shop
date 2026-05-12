@@ -85,6 +85,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('lineas-ropa', LineasRopaController::class);
     Route::get('pagos', [PagoController::class, 'index'])->name('pagos.index');
     Route::get('ventas', [VentaController::class, 'index'])->name('ventas.index');
+    Route::post('ventas/{venta}/abonos', [VentaController::class, 'registrarAbono'])->name('ventas.abonos.store');
     Route::post('pagos/{pago}/aprobar', [PagoController::class, 'aprobar'])->name('pagos.aprobar');
     Route::post('pagos/{pago}/rechazar', [PagoController::class, 'rechazar'])->name('pagos.rechazar');
     Route::get('admin/stock-reservas', [StockReservaMetricsController::class, 'index'])->name('admin.stock-reservas.index');

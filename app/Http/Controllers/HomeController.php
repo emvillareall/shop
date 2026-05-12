@@ -9,18 +9,14 @@ use App\Models\Venta;
 use App\Models\DetallePedido;
 use App\Models\Pago;
 use App\Models\PagoTransferencia;
+use App\Services\Ventas\AbonoService;
 use Illuminate\Http\Request;
 use DB;
 use Carbon\Carbon;
 
 class HomeController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
-    public function __construct()
+    public function __construct(private readonly AbonoService $abonoService)
     {
         $this->middleware('auth');
     }
@@ -62,7 +58,72 @@ class HomeController extends Controller
             ->map(fn ($rows) => $rows->values())
             ->toArray();
 
-        return view('home', compact('clientes', 'tiendas', 'productos', 'variantesPorProducto'));
+        $apartadosQuery = DB::table('ventas as v')
+            ->join('pedidos as p', 'p.id', '=', 'v.pedido_id')
+            ->join('clientes as c', 'c.id', '=', 'v.clientes_id')
+            ->select(
+                'v.id',
+                'v.pedido_id',
+                'v.total',
+                'v.fecha_proximo_abono',
+                DB::raw('DATEDIFF(CURDATE(), DATE(v.fecha_proximo_abono)) as dias_atraso'),
+                DB::raw("
+                    CASE
+                        WHEN v.fecha_proximo_abono IS NULL THEN 4
+                        WHEN DATE(v.fecha_proximo_abono) <= CURDATE() THEN 1
+                        WHEN YEARWEEK(v.fecha_proximo_abono, 1) = YEARWEEK(CURDATE(), 1) THEN 2
+                        ELSE 3
+                    END as prioridad_orden
+                "),
+                'p.codigo_pedido',
+                'p.descripcion',
+                'c.nombres_clientes',
+                'c.apellidos_clientes',
+                DB::raw('(select coalesce(sum(va.monto),0) from venta_abonos va where va.venta_id = v.id) as total_abonado')
+            )
+            ->where('v.modalidad_venta', 'APARTADO')
+            ->whereIn('v.estado_venta', ['PENDIENTE_ABONO', 'PENDIENTE']);
+
+        $apartados = (clone $apartadosQuery)
+            ->orderBy('prioridad_orden')
+            ->orderByRaw('COALESCE(v.fecha_proximo_abono, v.created_at) asc')
+            ->limit(8)
+            ->get()
+            ->map(function ($row) {
+                $row->saldo = max(0, (float)$row->total - (float)$row->total_abonado);
+                return $row;
+            });
+
+        $hoy = now()->startOfDay();
+        $finSemana = now()->copy()->endOfWeek();
+        $apartadosPendientes = (clone $apartadosQuery)->count();
+        $apartadosVencidosHoy = (clone $apartadosQuery)
+            ->whereNotNull('v.fecha_proximo_abono')
+            ->whereDate('v.fecha_proximo_abono', '<=', $hoy->toDateString())
+            ->count();
+        $apartadosSemana = (clone $apartadosQuery)
+            ->whereNotNull('v.fecha_proximo_abono')
+            ->whereBetween('v.fecha_proximo_abono', [$hoy->toDateTimeString(), $finSemana->toDateTimeString()])
+            ->count();
+        $saldoTotalApartados = (clone $apartadosQuery)
+            ->get()
+            ->sum(fn ($r) => max(0, (float)$r->total - (float)$r->total_abonado));
+
+        $apartadosMetrics = [
+            'pendientes' => (int) $apartadosPendientes,
+            'vencidos_hoy' => (int) $apartadosVencidosHoy,
+            'semana' => (int) $apartadosSemana,
+            'saldo_total' => (float) $saldoTotalApartados,
+        ];
+
+        return view('home', compact(
+            'clientes',
+            'tiendas',
+            'productos',
+            'variantesPorProducto',
+            'apartados',
+            'apartadosMetrics'
+        ));
     }
 
     public function registrarVentaFisica(Request $request)
@@ -83,6 +144,8 @@ class HomeController extends Controller
             'descuento_extra' => 'nullable|numeric|min:0',
             'recargo_extra' => 'nullable|numeric|min:0',
             'metodo_pago_pos' => 'required|in:efectivo,transferencia,paypal,payphone',
+            'modalidad_venta' => 'required|in:contado,apartado',
+            'abono_inicial' => 'nullable|numeric|min:0',
             'referencia_pago_pos' => 'nullable|string|max:120|required_if:metodo_pago_pos,transferencia',
         ]);
 
@@ -131,7 +194,11 @@ class HomeController extends Controller
 
         DB::transaction(function () use ($validated, $lineasRaw, $clienteId) {
             $metodoPago = (string) $validated['metodo_pago_pos'];
-            $estadoPago = in_array($metodoPago, ['paypal', 'payphone'], true) ? 'PENDIENTE' : 'APROBADO';
+            $modalidadVenta = (string) ($validated['modalidad_venta'] ?? 'contado');
+            $esApartado = $modalidadVenta === 'apartado';
+            $estadoPago = $esApartado
+                ? 'PENDIENTE'
+                : (in_array($metodoPago, ['paypal', 'payphone'], true) ? 'PENDIENTE' : 'APROBADO');
             $estadoPedido = $estadoPago === 'APROBADO' ? 'PAGADO' : 'PENDIENTE_PAGO';
             $estadoEnvio = $estadoPago === 'APROBADO' ? 'ENTREGADO' : 'SIN_ENVIO';
 
@@ -234,14 +301,24 @@ class HomeController extends Controller
                 'total_pedido' => $total,
             ]);
 
+            if ($esApartado) {
+                $abonoInicial = round((float) ($validated['abono_inicial'] ?? 0), 2);
+                if ($abonoInicial <= 0) {
+                    throw new \RuntimeException('Debes registrar un abono inicial para guardar un apartado.');
+                }
+                if ($abonoInicial > $total) {
+                    throw new \RuntimeException('El abono inicial no puede superar el total de la venta.');
+                }
+            }
+
             $pago = Pago::query()->create([
                 'pedido_id' => $pedido->id,
-                'metodo' => $metodoPago,
+                'metodo' => $esApartado ? 'apartado' : $metodoPago,
                 'estado' => $estadoPago,
                 'monto' => $total,
                 'moneda' => 'USD',
                 'referencia_externa' => $validated['referencia_pago_pos'] ?? null,
-                'metadata' => ['origen' => 'pos_home', 'provider_confirmed' => $estadoPago === 'APROBADO'],
+                'metadata' => ['origen' => 'pos_home', 'provider_confirmed' => $estadoPago === 'APROBADO', 'modalidad_venta' => strtoupper($modalidadVenta)],
                 'revisado_por' => auth()->id(),
                 'revisado_at' => now(),
                 'aprobado_at' => $estadoPago === 'APROBADO' ? now() : null,
@@ -263,10 +340,25 @@ class HomeController extends Controller
                     'subtotal' => $subtotalConRecargo,
                     'descuento' => $descuento,
                     'total' => $total,
-                    'estado_venta' => $estadoPago === 'APROBADO' ? 'PAGADO' : 'PENDIENTE',
+                    'estado_venta' => $estadoPago === 'APROBADO' ? 'PAGADO' : ($esApartado ? 'PENDIENTE_ABONO' : 'PENDIENTE'),
+                    'modalidad_venta' => strtoupper($modalidadVenta),
                     'fecha_venta' => now(),
+                    'fecha_proximo_abono' => $esApartado ? now()->addDays(7) : null,
+                    'fecha_ultimo_abono' => null,
                 ]
             );
+
+            if ($esApartado) {
+                $venta = Venta::query()->where('pedido_id', $pedido->id)->firstOrFail();
+                $this->abonoService->registrarAbono(
+                    $venta,
+                    (float) $validated['abono_inicial'],
+                    $metodoPago,
+                    $validated['referencia_pago_pos'] ?? null,
+                    'Abono inicial de apartado (venta mostrador).',
+                    auth()->id()
+                );
+            }
         });
 
         return redirect()->route('home')->with('success', 'Factura creada correctamente en una sola pantalla.');

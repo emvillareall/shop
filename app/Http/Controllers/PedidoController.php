@@ -8,6 +8,7 @@ use App\Models\Tienda;
 use App\Models\Venta;
 use App\Models\Pago;
 use App\Models\PagoTransferencia;
+use App\Models\VentaAbono;
 use App\Services\Auditoria\AuditService;
 use App\Services\Inventario\InventarioService;
 use Illuminate\Http\Request;
@@ -130,6 +131,9 @@ class PedidoController extends Controller
     public function show($id)
     {
         $pedido = Pedido::find($id);
+        $abonos = collect();
+        $totalAbonado = 0.0;
+        $saldoPendiente = 0.0;
         $signedUrl = null;
         $whatsappUrl = null;
         if ($pedido) {
@@ -145,9 +149,16 @@ class PedidoController extends Controller
                 $msg = rawurlencode("Hola, te compartimos tu formulario de datos para completar el pedido {$pedido->codigo_pedido}:\n{$signedUrl}");
                 $whatsappUrl = "https://wa.me/{$telefono}?text={$msg}";
             }
+
+            $abonos = VentaAbono::query()
+                ->where('pedido_id', $pedido->id)
+                ->orderBy('fecha_abono')
+                ->get();
+            $totalAbonado = (float) $abonos->sum('monto');
+            $saldoPendiente = max(0, (float)($pedido->total_pedido ?? 0) - $totalAbonado);
         }
 
-        return view('pedido.show', compact('pedido', 'signedUrl', 'whatsappUrl'));
+        return view('pedido.show', compact('pedido', 'signedUrl', 'whatsappUrl', 'abonos', 'totalAbonado', 'saldoPendiente'));
     }
 
     public function edit($id)
