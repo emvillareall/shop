@@ -1,4 +1,4 @@
-<div class="grid gap-5 lg:grid-cols-3" wire:poll.1s="tickReserva">
+<div class="grid gap-6 lg:grid-cols-3" wire:poll.1s="tickReserva">
     <section class="space-y-4 lg:col-span-2">
         @if($errors->any())
             <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
@@ -11,7 +11,7 @@
             </div>
         @endif
 
-        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="rounded-2xl border border-purple-100 bg-white p-5 shadow-sm">
             <h3 class="mb-3 text-base font-semibold">Datos del cliente</h3>
             <div class="grid gap-3 md:grid-cols-2">
                 <div>
@@ -46,21 +46,24 @@
             <p class="mt-2 text-xs text-slate-500">Si el cliente ya existe, el sistema lo asocia y actualiza automaticamente.</p>
         </div>
 
-        <div class="space-y-1 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="space-y-2 rounded-2xl border border-purple-100 bg-white p-5 shadow-sm">
             <h3 class="text-base font-semibold">Metodo de pago</h3>
-            <div class="grid gap-2 sm:grid-cols-3">
-                <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <div class="grid gap-3 sm:grid-cols-3">
+                <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition
+                    {{ $metodo_pago === 'transferencia' ? 'border-purple-300 bg-purple-50 text-purple-900' : 'border-slate-200 bg-white text-slate-700 hover:border-purple-200' }}">
                     <input type="radio" name="metodo_pago" wire:model.live="metodo_pago" value="transferencia">
                     Transferencia
                 </label>
-                <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition
+                    {{ $metodo_pago === 'paypal' ? 'border-purple-300 bg-purple-50 text-purple-900' : 'border-slate-200 bg-white text-slate-700 hover:border-purple-200' }}">
                     <input type="radio" name="metodo_pago" wire:model.live="metodo_pago" value="paypal" @disabled(!$paypalDisponible)>
                     PayPal
                     @if(!$paypalDisponible)
                         <span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">No disponible</span>
                     @endif
                 </label>
-                <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition
+                    {{ $metodo_pago === 'payphone' ? 'border-purple-300 bg-purple-50 text-purple-900' : 'border-slate-200 bg-white text-slate-700 hover:border-purple-200' }}">
                     <input type="radio" name="metodo_pago" wire:model.live="metodo_pago" value="payphone" @disabled(!$payphoneDisponible)>
                     Payphone
                     @if(!$payphoneDisponible)
@@ -71,7 +74,7 @@
             @error('metodo_pago') <p class="text-xs text-rose-600">{{ $message }}</p> @enderror
 
             @if($metodo_pago === 'transferencia')
-                <div class="grid gap-3 pt-2 md:grid-cols-2">
+                <div class="grid gap-3 pt-3 md:grid-cols-2">
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Referencia</label>
                         <input type="text" wire:model.defer="referencia_transferencia" placeholder="Numero de referencia">
@@ -85,18 +88,18 @@
                     </div>
                 </div>
             @elseif($metodo_pago === 'paypal')
-                <div class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800">
+                <div class="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800">
                     PayPal seleccionado. Al confirmar, te redirigimos para completar el pago seguro.
                 </div>
             @elseif($metodo_pago === 'payphone')
-                <div class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800">
-                    Payphone seleccionado. Al confirmar, te redirigimos para completar el cobro.
+                <div class="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800">
+                    Payphone seleccionado. Al confirmar, abriremos la cajita de pago segura dentro del flujo de tu compra.
                 </div>
             @endif
         </div>
     </section>
 
-    <aside class="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <aside class="sticky top-20 space-y-4 self-start rounded-2xl border border-purple-100 bg-white p-5 shadow-sm">
         <h3 class="text-base font-semibold">Resumen</h3>
         <div class="space-y-2 text-sm">
             @forelse($items as $item)
@@ -111,9 +114,9 @@
                 <p class="text-slate-500">No hay items en carrito.</p>
             @endforelse
         </div>
-        <div class="border-t border-slate-200 pt-3">
+        <div class="border-t border-purple-100 pt-3">
             <p class="text-lg font-bold">Total: ${{ number_format($this->total, 2) }}</p>
-            <p class="mt-1 text-sm font-semibold text-amber-700">
+            <p class="mt-2 inline-flex rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
                 Reserva activa:
                 {{ str_pad((string) floor($secondsRemaining / 60), 2, '0', STR_PAD_LEFT) }}:{{ str_pad((string) ($secondsRemaining % 60), 2, '0', STR_PAD_LEFT) }}
             </p>
@@ -122,12 +125,12 @@
         <button wire:click="confirmarPedido"
                 wire:loading.attr="disabled"
                 wire:target="confirmarPedido,comprobante_transferencia"
-                class="btn btn-primary btn-sm w-full disabled:cursor-not-allowed disabled:opacity-60">
+                class="btn btn-primary btn-sm w-full rounded-xl disabled:cursor-not-allowed disabled:opacity-60">
             <span wire:loading.remove wire:target="confirmarPedido">
                 @if($metodo_pago === 'paypal')
                     Continuar con PayPal
                 @elseif($metodo_pago === 'payphone')
-                    Continuar con Payphone
+                    Ir a pagar con Payphone
                 @else
                     Confirmar pedido
                 @endif

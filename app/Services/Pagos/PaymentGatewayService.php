@@ -3,20 +3,38 @@
 namespace App\Services\Pagos;
 
 use App\Models\Pago;
+use App\Models\PagoPayphone;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class PaymentGatewayService
 {
+    public function __construct(
+        private readonly PaymentConfigService $configService
+    ) {}
+
     private function fakeMode(): bool
     {
         return (bool) config('payments.fake_mode', false);
     }
 
+    private function pickValue(mixed ...$candidates): string
+    {
+        foreach ($candidates as $candidate) {
+            if ($candidate !== null && trim((string) $candidate) !== '') {
+                return trim((string) $candidate);
+            }
+        }
+
+        return '';
+    }
+
     private function paypalAccessToken(): string
     {
-        $base = (string) config('payments.paypal.base_url');
-        $clientId = (string) config('payments.paypal.client_id');
-        $secret = (string) config('payments.paypal.client_secret');
+        $cfg = $this->configService->get('paypal');
+        $base = (string) ($cfg['base_url'] ?? config('payments.paypal.base_url'));
+        $clientId = (string) ($cfg['public_key'] ?? config('payments.paypal.client_id'));
+        $secret = (string) ($cfg['secret_key'] ?? config('payments.paypal.client_secret'));
 
         if (!$clientId || !$secret || !$base) {
             if ($this->fakeMode()) {
@@ -53,7 +71,8 @@ class PaymentGatewayService
             ];
         }
 
-        $base = rtrim((string) config('payments.paypal.base_url'), '/');
+        $cfg = $this->configService->get('paypal');
+        $base = rtrim((string) ($cfg['base_url'] ?? config('payments.paypal.base_url')), '/');
         $token = $this->paypalAccessToken();
 
         $payload = [
@@ -100,10 +119,11 @@ class PaymentGatewayService
             ];
         }
 
-        $base = rtrim((string) config('payments.payphone.base_url'), '/');
-        $token = (string) config('payments.payphone.token');
-        $storeId = (string) config('payments.payphone.store_id');
-        $currency = (string) config('payments.payphone.currency', 'USD');
+        $cfg = $this->configService->get('payphone');
+        $base = rtrim((string) ($cfg['base_url'] ?? config('payments.payphone.base_url')), '/');
+        $token = (string) ($cfg['secret_key'] ?? config('payments.payphone.token'));
+        $storeId = (string) ($cfg['merchant_id'] ?? config('payments.payphone.store_id'));
+        $currency = (string) ($cfg['currency'] ?? config('payments.payphone.currency', 'USD'));
 
         if (!$token || !$storeId) {
             throw new \RuntimeException('Payphone no esta configurado en el entorno.');
@@ -138,9 +158,135 @@ class PaymentGatewayService
         ];
     }
 
+    public function buildPayphoneBoxPayload(Pago $pago, string $responseUrl): array
+    {
+        $cfg = $this->configService->get('payphone');
+        $token = $this->pickValue($cfg['secret_key'] ?? null, config('payments.payphone.token'));
+        $storeId = $this->pickValue($cfg['merchant_id'] ?? null, config('payments.payphone.store_id'));
+        $currency = $this->pickValue($cfg['currency'] ?? null, config('payments.payphone.currency', 'USD'));
+        $baseUrl = $this->pickValue($cfg['base_url'] ?? null, config('payments.payphone.base_url'));
+
+        $missing = [];
+        if ($token === '') {
+            $missing[] = 'token secreto';
+        }
+        if ($storeId === '') {
+            $missing[] = 'store/merchant id';
+        }
+        if ($baseUrl === '') {
+            $missing[] = 'base url api';
+        }
+        if (!empty($missing)) {
+            throw new \RuntimeException('PayPhone no esta configurado correctamente. Falta: ' . implode(', ', $missing) . '.');
+        }
+
+        $clientTxId = 'PP-' . $pago->pedido_id . '-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(5));
+        $amountCents = (int) round(((float) $pago->monto) * 100);
+        if ($amountCents <= 0) {
+            throw new \RuntimeException('Monto invalido para PayPhone.');
+        }
+
+        // Ajuste simple por ahora: todo como monto sin IVA para no romper flujo actual.
+        $amountWithoutTax = $amountCents;
+        $amountWithTax = 0;
+        $tax = 0;
+        $service = 0;
+        $tip = 0;
+
+        if ($amountCents !== ($amountWithoutTax + $amountWithTax + $tax + $service + $tip)) {
+            throw new \RuntimeException('Los montos de PayPhone no cuadran.');
+        }
+
+        PagoPayphone::query()->updateOrCreate(
+            ['pago_id' => $pago->id],
+            [
+                'client_transaction_id' => $clientTxId,
+                'payphone_status' => 'CREATED',
+                'status_code' => 1,
+                'raw_request_json' => [
+                    'amount' => $amountCents,
+                    'amountWithoutTax' => $amountWithoutTax,
+                    'amountWithTax' => $amountWithTax,
+                    'tax' => $tax,
+                    'service' => $service,
+                    'tip' => $tip,
+                    'currency' => $currency,
+                    'storeId' => $storeId,
+                    'responseUrl' => $responseUrl,
+                ],
+            ]
+        );
+
+        $pago->update([
+            'estado' => 'PENDIENTE',
+            'metadata' => array_merge((array) ($pago->metadata ?? []), [
+                'payphone_box' => true,
+                'client_transaction_id' => $clientTxId,
+            ]),
+        ]);
+
+        return [
+            'token' => $token,
+            'storeId' => $storeId,
+            'currency' => $currency,
+            'clientTransactionId' => $clientTxId,
+            'amount' => $amountCents,
+            'amountWithoutTax' => $amountWithoutTax,
+            'amountWithTax' => $amountWithTax,
+            'tax' => $tax,
+            'service' => $service,
+            'tip' => $tip,
+            'reference' => (string) ($pago->pedido->codigo_pedido ?? $pago->pedido_id),
+            'responseUrl' => $responseUrl,
+        ];
+    }
+
+    public function confirmPayphoneTransaction(string $payphoneId, string $clientTxId): array
+    {
+        $cfg = $this->configService->get('payphone');
+        $token = (string) ($cfg['secret_key'] ?? config('payments.payphone.token'));
+        if (!$token) {
+            throw new \RuntimeException('Token PayPhone no configurado.');
+        }
+
+        $url = 'https://paymentbox.payphonetodoesposible.com/api/confirm';
+
+        $response = Http::withToken($token)
+            ->acceptJson()
+            ->post($url, [
+                'id' => (int) $payphoneId,
+                'clientTxId' => $clientTxId,
+            ]);
+
+        if (!$response->successful()) {
+            return [
+                'ok' => false,
+                'http_status' => $response->status(),
+                'status_code' => null,
+                'transaction_status' => 'HTTP_ERROR',
+                'raw' => $response->json(),
+            ];
+        }
+
+        $raw = (array) $response->json();
+        $statusCode = (int) data_get($raw, 'statusCode', 0);
+        $transactionStatus = (string) data_get($raw, 'transactionStatus', '');
+
+        return [
+            'ok' => ($statusCode === 3 && strcasecmp($transactionStatus, 'Approved') === 0),
+            'status_code' => $statusCode,
+            'transaction_status' => $transactionStatus,
+            'authorization_code' => (string) data_get($raw, 'authorizationCode', ''),
+            'card_brand' => (string) data_get($raw, 'cardBrand', ''),
+            'message' => (string) data_get($raw, 'message', ''),
+            'raw' => $raw,
+        ];
+    }
+
     public function confirmPaypalFromWebhook(array $payload): array
     {
-        $base = rtrim((string) config('payments.paypal.base_url'), '/');
+        $cfg = $this->configService->get('paypal');
+        $base = rtrim((string) ($cfg['base_url'] ?? config('payments.paypal.base_url')), '/');
         $token = $this->paypalAccessToken();
         $eventType = (string) data_get($payload, 'event_type', '');
         $resource = (array) data_get($payload, 'resource', []);
@@ -183,8 +329,9 @@ class PaymentGatewayService
 
     public function confirmPayphoneFromWebhook(array $payload): array
     {
-        $base = rtrim((string) config('payments.payphone.base_url'), '/');
-        $token = (string) config('payments.payphone.token');
+        $cfg = $this->configService->get('payphone');
+        $base = rtrim((string) ($cfg['base_url'] ?? config('payments.payphone.base_url')), '/');
+        $token = (string) ($cfg['secret_key'] ?? config('payments.payphone.token'));
         $eventType = strtoupper((string) data_get($payload, 'transactionStatus', data_get($payload, 'status', 'UNKNOWN')));
         $transactionId = (string) data_get($payload, 'transactionId', data_get($payload, 'id', ''));
 
@@ -192,7 +339,7 @@ class PaymentGatewayService
             return ['confirmed' => false, 'status' => 'MISSING_CONFIG_OR_TX'];
         }
 
-        $verifyPath = (string) config('payments.payphone.verify_path', '/sale/{id}');
+        $verifyPath = (string) ($cfg['verify_path'] ?? config('payments.payphone.verify_path', '/sale/{id}'));
         $url = $base . '/' . ltrim(str_replace('{id}', $transactionId, $verifyPath), '/');
 
         $resp = Http::withToken($token)->acceptJson()->get($url);

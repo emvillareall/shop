@@ -28,7 +28,7 @@ class AuditLogController extends Controller
 
     private function buildQuery(Request $request)
     {
-        $query = AuditLog::query()->orderByDesc('id');
+        $query = AuditLog::query();
 
         $domain = (string) $request->input('dominio', '');
         if ($domain && isset(self::DOMAIN_RULES[$domain])) {
@@ -63,7 +63,7 @@ class AuditLogController extends Controller
     public function index(Request $request)
     {
         $baseQuery = $this->buildQuery($request);
-        $logs = (clone $baseQuery)->paginate(50)->withQueryString();
+        $logs = (clone $baseQuery)->orderByDesc('id')->paginate(50)->withQueryString();
 
         $totalEventos = (clone $baseQuery)->count();
         $ultimas24h = (clone $baseQuery)->where('created_at', '>=', now()->subDay())->count();

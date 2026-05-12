@@ -15,10 +15,11 @@ class AbonoService
         float $monto,
         string $metodo,
         ?string $referencia = null,
+        ?string $comprobantePath = null,
         ?string $observacion = null,
         ?int $registradoPor = null
     ): VentaAbono {
-        return DB::transaction(function () use ($venta, $monto, $metodo, $referencia, $observacion, $registradoPor) {
+        return DB::transaction(function () use ($venta, $monto, $metodo, $referencia, $comprobantePath, $observacion, $registradoPor) {
             $venta = Venta::query()->lockForUpdate()->findOrFail($venta->id);
             $pedido = Pedido::query()->lockForUpdate()->findOrFail($venta->pedido_id);
 
@@ -40,6 +41,7 @@ class AbonoService
                 'monto' => $monto,
                 'metodo' => $metodo,
                 'referencia' => $referencia,
+                'comprobante_path' => $comprobantePath,
                 'observacion' => $observacion,
                 'fecha_abono' => now(),
                 'registrado_por' => $registradoPor,

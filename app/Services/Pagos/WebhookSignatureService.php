@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Http;
 
 class WebhookSignatureService
 {
+    public function __construct(
+        private readonly PaymentConfigService $configService
+    ) {}
+
     public function isWithinReplayWindow(?string $timestamp): bool
     {
         if (!$timestamp) {
@@ -24,11 +28,12 @@ class WebhookSignatureService
 
     public function validatePaypal(Request $request, array $payload): array
     {
-        $strict = (bool) config('payments.webhooks.paypal_strict', true);
-        $webhookId = (string) config('payments.paypal.webhook_id');
-        $base = (string) config('payments.paypal.base_url');
-        $clientId = (string) config('payments.paypal.client_id');
-        $secret = (string) config('payments.paypal.client_secret');
+        $cfg = $this->configService->get('paypal');
+        $strict = (bool) ($cfg['strict_webhook'] ?? config('payments.webhooks.paypal_strict', true));
+        $webhookId = (string) ($cfg['webhook_id'] ?? config('payments.paypal.webhook_id'));
+        $base = (string) ($cfg['base_url'] ?? config('payments.paypal.base_url'));
+        $clientId = (string) ($cfg['public_key'] ?? config('payments.paypal.client_id'));
+        $secret = (string) ($cfg['secret_key'] ?? config('payments.paypal.client_secret'));
 
         if (!$webhookId || !$clientId || !$secret || !$base) {
             return $this->strictFallback($strict, 'paypal_not_configured');
@@ -83,8 +88,9 @@ class WebhookSignatureService
 
     public function validatePayphone(Request $request): array
     {
-        $strict = (bool) config('payments.webhooks.payphone_strict', true);
-        $secret = (string) config('payments.payphone.webhook_secret');
+        $cfg = $this->configService->get('payphone');
+        $strict = (bool) ($cfg['strict_webhook'] ?? config('payments.webhooks.payphone_strict', true));
+        $secret = (string) ($cfg['webhook_secret'] ?? config('payments.payphone.webhook_secret'));
 
         if (!$secret) {
             return $this->strictFallback($strict, 'payphone_not_configured');

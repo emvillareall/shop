@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name', 'Booty Fitness') }}</title>
+    @stack('styles')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -25,5 +26,6 @@
     </main>
     <x-ecommerce.footer />
     @livewireScripts
+    @stack('scripts')
 </body>
 </html>

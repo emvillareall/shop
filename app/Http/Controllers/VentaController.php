@@ -52,14 +52,30 @@ class VentaController extends Controller
             'monto' => 'required|numeric|min:0.01',
             'metodo' => 'required|in:efectivo,transferencia,paypal,payphone',
             'referencia' => 'nullable|string|max:120',
+            'comprobante' => 'nullable|file|mimes:jpg,jpeg,png,pdf,webp|max:5120',
             'observacion' => 'nullable|string|max:500',
         ]);
+
+        $metodo = (string) $validated['metodo'];
+        $referencia = trim((string) ($validated['referencia'] ?? ''));
+        $tieneComprobante = $request->hasFile('comprobante');
+        if ($metodo === 'transferencia' && $referencia === '' && !$tieneComprobante) {
+            return back()
+                ->withErrors(['referencia' => 'Para transferencia debes ingresar referencia o subir comprobante.'])
+                ->withInput();
+        }
+
+        $comprobantePath = null;
+        if ($tieneComprobante) {
+            $comprobantePath = $request->file('comprobante')->store('abonos/comprobantes', 'public');
+        }
 
         $this->abonoService->registrarAbono(
             $venta,
             (float) $validated['monto'],
-            (string) $validated['metodo'],
-            $validated['referencia'] ?? null,
+            $metodo,
+            $referencia !== '' ? $referencia : null,
+            $comprobantePath,
             $validated['observacion'] ?? null,
             auth()->id()
         );

@@ -12,6 +12,7 @@ use App\Models\Pedido;
 use App\Services\Inventario\InventarioService;
 use App\Services\Inventario\StockReservaService;
 use App\Services\Pagos\PaymentGatewayService;
+use App\Services\Pagos\PaymentConfigService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
@@ -26,6 +27,7 @@ class Checkout extends Component
     protected InventarioService $inventarioService;
     protected StockReservaService $stockReservaService;
     protected PaymentGatewayService $paymentGatewayService;
+    protected PaymentConfigService $paymentConfigService;
 
     public array $items = [];
     public string $cedula = '';
@@ -68,11 +70,17 @@ class Checkout extends Component
         'mimes' => 'El campo :attribute debe ser un archivo de tipo: :values.',
     ];
 
-    public function boot(InventarioService $inventarioService, StockReservaService $stockReservaService, PaymentGatewayService $paymentGatewayService): void
+    public function boot(
+        InventarioService $inventarioService,
+        StockReservaService $stockReservaService,
+        PaymentGatewayService $paymentGatewayService,
+        PaymentConfigService $paymentConfigService
+    ): void
     {
         $this->inventarioService = $inventarioService;
         $this->stockReservaService = $stockReservaService;
         $this->paymentGatewayService = $paymentGatewayService;
+        $this->paymentConfigService = $paymentConfigService;
     }
 
     protected function rules(): array
@@ -296,23 +304,7 @@ class Checkout extends Component
 
         if ($this->metodo_pago === 'payphone') {
             try {
-                $sale = $this->paymentGatewayService->createPayphoneCheckout(
-                    $pago,
-                    URL::temporarySignedRoute('payments.return', now()->addMinutes(30), ['gateway' => 'payphone', 'pago' => $pago->id])
-                );
-
-                $pago->update([
-                    'referencia_externa' => $sale['provider_order_id'] ?? $pago->referencia_externa,
-                    'metadata' => array_merge((array) ($pago->metadata ?? []), ['payphone_sale' => $sale['raw'] ?? []]),
-                ]);
-                PagoPayphone::query()->where('pago_id', $pago->id)->update([
-                    'transaction_id' => $sale['provider_order_id'] ?? null,
-                    'payphone_status' => 'CREATED',
-                ]);
-
-                if (!empty($sale['redirect_url'])) {
-                    return redirect()->away($sale['redirect_url']);
-                }
+                return redirect()->route('payments.payphone.box', $pago->id);
             } catch (\Throwable $e) {
                 Log::error('payphone_create_sale_failed', ['pago_id' => $pago->id, 'error' => $e->getMessage()]);
                 $pago->update([
@@ -342,8 +334,8 @@ class Checkout extends Component
     public function mount(): void
     {
         $fakeMode = (bool) config('payments.fake_mode', false);
-        $this->paypalDisponible = $fakeMode || (bool) (config('payments.paypal.client_id') && config('payments.paypal.client_secret'));
-        $this->payphoneDisponible = $fakeMode || (bool) (config('payments.payphone.token') && config('payments.payphone.store_id'));
+        $this->paypalDisponible = $fakeMode || $this->paymentConfigService->isAvailable('paypal');
+        $this->payphoneDisponible = $fakeMode || $this->paymentConfigService->isAvailable('payphone');
 
         if (!$this->paypalDisponible && $this->metodo_pago === 'paypal') {
             $this->metodo_pago = 'transferencia';

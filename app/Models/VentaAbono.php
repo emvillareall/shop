@@ -14,6 +14,7 @@ class VentaAbono extends Model
         'monto',
         'metodo',
         'referencia',
+        'comprobante_path',
         'observacion',
         'fecha_abono',
         'registrado_por',
@@ -28,4 +29,3 @@ class VentaAbono extends Model
         return $this->belongsTo(Venta::class, 'venta_id');
     }
 }
-

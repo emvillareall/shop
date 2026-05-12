@@ -12,10 +12,12 @@ use App\Http\Controllers\CompraController;
 use App\Http\Controllers\DetallePedidoController;
 use App\Http\Controllers\EcommerceController;
 use App\Http\Controllers\LineasRopaController;
+use App\Http\Controllers\ApartadoController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ParametroController;
 use App\Http\Controllers\PaymentFlowController;
+use App\Http\Controllers\PaymentGatewayConfigController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\PDFController;
 use App\Http\Controllers\PedidoController;
@@ -84,7 +86,10 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('categorias-productos', CategoriasProductoController::class);
     Route::resource('lineas-ropa', LineasRopaController::class);
     Route::get('pagos', [PagoController::class, 'index'])->name('pagos.index');
+    Route::get('pagos/configuracion', [PaymentGatewayConfigController::class, 'index'])->name('pagos.configuracion.index');
+    Route::post('pagos/configuracion/{gateway}', [PaymentGatewayConfigController::class, 'update'])->name('pagos.configuracion.update');
     Route::get('ventas', [VentaController::class, 'index'])->name('ventas.index');
+    Route::get('apartados', [ApartadoController::class, 'index'])->name('apartados.index');
     Route::post('ventas/{venta}/abonos', [VentaController::class, 'registrarAbono'])->name('ventas.abonos.store');
     Route::post('pagos/{pago}/aprobar', [PagoController::class, 'aprobar'])->name('pagos.aprobar');
     Route::post('pagos/{pago}/rechazar', [PagoController::class, 'rechazar'])->name('pagos.rechazar');
@@ -160,10 +165,13 @@ Route::get('/media/productos/{filename}', [MediaController::class, 'producto'])
     ->name('media.producto');
 
 // Payment callbacks
-Route::middleware(['signed', 'throttle:60,1'])->group(function () {
+Route::middleware(['throttle:60,1'])->group(function () {
     Route::get('/payments/{gateway}/{pago}/return', [PaymentFlowController::class, 'providerReturn'])->name('payments.return');
     Route::get('/payments/{gateway}/{pago}/cancel', [PaymentFlowController::class, 'providerCancel'])->name('payments.cancel');
 });
+Route::get('/checkout/payphone/{pago}', [PaymentFlowController::class, 'payphoneBox'])
+    ->middleware('throttle:60,1')
+    ->name('payments.payphone.box');
 
 Route::post('/webhooks/paypal', [PaymentWebhookController::class, 'paypal'])
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
