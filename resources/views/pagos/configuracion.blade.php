@@ -61,8 +61,11 @@
                     </div>
                     <div class="grid gap-3 md:grid-cols-2">
                         <div>
-                            <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Store / Merchant ID</label>
-                            <input class="form-control" name="merchant_id" value="{{ $payphone['merchant_id'] ?? '' }}">
+                            <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Store ID (PayPhone)</label>
+                            <input class="form-control" name="store_id" value="{{ $payphone['store_id'] ?? ($payphone['merchant_id'] ?? '') }}" placeholder="Ej: 0200898385001">
+                            <p class="mt-1 text-xs text-slate-500">
+                                Usa el <strong>Store ID</strong> de PayPhone Developer (no el Client ID ni la clave secreta).
+                            </p>
                         </div>
                         <div>
                             <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Token secreto</label>

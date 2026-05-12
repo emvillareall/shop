@@ -23,7 +23,7 @@
 @endpush
 
 @push('scripts')
-    <script src="https://cdn.payphonetodoesposible.com/box/v2.0/payphone-payment-box.js"></script>
+    <script type="module" src="https://cdn.payphonetodoesposible.com/box/v2.0/payphone-payment-box.js"></script>
     <script>
         (function () {
             const data = @json($payload);
@@ -40,7 +40,7 @@
             }
 
             if (!data.storeId || !data.token || !data.responseUrl) {
-                showDebug('Falta configuración de PayPhone (storeId/token/responseUrl). Revisa Pasarelas.');
+                showDebug('Falta configuracion de PayPhone (storeId/token/responseUrl). Revisa Pasarelas.');
                 return;
             }
 
@@ -49,6 +49,14 @@
             }
 
             try {
+                console.info('PayPhone debug', {
+                    storeId: data.storeId,
+                    currency: data.currency,
+                    amount: data.amount,
+                    env: data.environment || 'no-definido',
+                    responseUrl: data.responseUrl,
+                });
+
                 new PPaymentButtonBox({
                     token: data.token,
                     clientTransactionId: data.clientTransactionId,
@@ -62,14 +70,14 @@
                     storeId: data.storeId,
                     reference: data.reference,
                     responseUrl: data.responseUrl,
-                    lang: "es",
+                    lang: 'es',
                     displayAmount: true,
-                    buttonColor: "#7c3aed",
-                    buttonTextColor: "#ffffff"
-                }).render("pp-button");
+                    buttonColor: '#7c3aed',
+                    buttonTextColor: '#ffffff',
+                }).render('pp-button');
             } catch (e) {
                 console.error('PayPhone render error', e);
-                showDebug('PayPhone no pudo renderizar la cajita. Revisa dominio/autorización en PayPhone Developer.');
+                showDebug('PayPhone no pudo renderizar la cajita. Revisa dominio, storeId, modo (sandbox/produccion) y autorizacion en PayPhone Developer.');
             }
         })();
     </script>

@@ -29,6 +29,32 @@ class PaymentGatewayService
         return '';
     }
 
+    private function validatePayphoneRuntimeConfig(string $storeId, string $token, string $baseUrl): void
+    {
+        $errors = [];
+
+        // Store ID de PayPhone para comercios EC suele ser numerico (RUC/identificador de tienda).
+        // Evitamos que se use por error client_id / identifier alfanumerico.
+        if (!preg_match('/^[0-9]{10,20}$/', $storeId)) {
+            $errors[] = 'store/merchant id invalido (debe ser numerico, 10-20 digitos)';
+        }
+
+        // Token largo tipo bearer emitido por PayPhone Developer.
+        if (mb_strlen($token) < 80) {
+            $errors[] = 'token secreto invalido o incompleto';
+        }
+
+        if (!str_starts_with($baseUrl, 'https://')) {
+            $errors[] = 'base url api debe usar https';
+        }
+
+        if (!empty($errors)) {
+            throw new \RuntimeException(
+                'PayPhone configurado con errores: ' . implode(', ', $errors) . '.'
+            );
+        }
+    }
+
     private function paypalAccessToken(): string
     {
         $cfg = $this->configService->get('paypal');
@@ -162,7 +188,7 @@ class PaymentGatewayService
     {
         $cfg = $this->configService->get('payphone');
         $token = $this->pickValue($cfg['secret_key'] ?? null, config('payments.payphone.token'));
-        $storeId = $this->pickValue($cfg['merchant_id'] ?? null, config('payments.payphone.store_id'));
+        $storeId = $this->pickValue($cfg['store_id'] ?? null, $cfg['merchant_id'] ?? null, config('payments.payphone.store_id'));
         $currency = $this->pickValue($cfg['currency'] ?? null, config('payments.payphone.currency', 'USD'));
         $baseUrl = $this->pickValue($cfg['base_url'] ?? null, config('payments.payphone.base_url'));
 
@@ -179,6 +205,8 @@ class PaymentGatewayService
         if (!empty($missing)) {
             throw new \RuntimeException('PayPhone no esta configurado correctamente. Falta: ' . implode(', ', $missing) . '.');
         }
+
+        $this->validatePayphoneRuntimeConfig($storeId, $token, $baseUrl);
 
         $clientTxId = 'PP-' . $pago->pedido_id . '-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(5));
         $amountCents = (int) round(((float) $pago->monto) * 100);
@@ -212,6 +240,7 @@ class PaymentGatewayService
                     'tip' => $tip,
                     'currency' => $currency,
                     'storeId' => $storeId,
+                    'environment' => (string) ($cfg['environment'] ?? ''),
                     'responseUrl' => $responseUrl,
                 ],
             ]
@@ -238,6 +267,7 @@ class PaymentGatewayService
             'tip' => $tip,
             'reference' => (string) ($pago->pedido->codigo_pedido ?? $pago->pedido_id),
             'responseUrl' => $responseUrl,
+            'environment' => (string) ($cfg['environment'] ?? ''),
         ];
     }
 

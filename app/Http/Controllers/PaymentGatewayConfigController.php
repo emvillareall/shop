@@ -33,6 +33,7 @@ class PaymentGatewayConfigController extends Controller
             'public_key' => 'nullable|string|max:2048',
             'secret_key' => 'nullable|string|max:4096',
             'merchant_id' => 'nullable|string|max:120',
+            'store_id' => 'nullable|string|max:120',
             'currency' => 'nullable|string|max:10',
             'webhook_id' => 'nullable|string|max:2048',
             'webhook_secret' => 'nullable|string|max:4096',
@@ -50,7 +51,12 @@ class PaymentGatewayConfigController extends Controller
         if ($gateway === 'payphone') {
             $data['public_key'] = null;
             $data['webhook_id'] = null;
+            $storeId = trim((string) ($data['store_id'] ?? ''));
+            $data['settings'] = array_merge((array) ($data['settings'] ?? []), [
+                'store_id' => $storeId !== '' ? $storeId : null,
+            ]);
         }
+        unset($data['store_id']);
 
         $this->configService->upsert($gateway, $data);
 

@@ -35,6 +35,9 @@ class PaymentConfigService
             'public_key' => $this->filledValue($db->public_key) ? $db->public_key : ($env['public_key'] ?? null),
             'secret_key' => $this->filledValue($db->secret_key) ? $db->secret_key : ($env['secret_key'] ?? null),
             'merchant_id' => $this->filledValue($db->merchant_id) ? $db->merchant_id : ($env['merchant_id'] ?? null),
+            'store_id' => $this->filledValue(data_get($db->settings, 'store_id'))
+                ? (string) data_get($db->settings, 'store_id')
+                : ($this->filledValue($db->merchant_id) ? $db->merchant_id : ($env['merchant_id'] ?? null)),
             'currency' => $this->filledValue($db->currency) ? $db->currency : ($env['currency'] ?? 'USD'),
             'webhook_id' => $this->filledValue($db->webhook_id) ? $db->webhook_id : ($env['webhook_id'] ?? null),
             'webhook_secret' => $this->filledValue($db->webhook_secret) ? $db->webhook_secret : ($env['webhook_secret'] ?? null),
@@ -58,7 +61,7 @@ class PaymentConfigService
             return !empty($cfg['public_key']) && !empty($cfg['secret_key']) && !empty($cfg['base_url']);
         }
 
-        return !empty($cfg['secret_key']) && !empty($cfg['merchant_id']) && !empty($cfg['base_url']);
+        return !empty($cfg['secret_key']) && !empty(($cfg['store_id'] ?? $cfg['merchant_id'] ?? null)) && !empty($cfg['base_url']);
     }
 
     public function upsert(string $gateway, array $data): PaymentGatewayConfig
@@ -82,7 +85,11 @@ class PaymentConfigService
         $model->webhook_secret = $data['webhook_secret'] ?? null;
         $model->verify_path = $data['verify_path'] ?? '/sale/{id}';
         $model->strict_webhook = (bool) ($data['strict_webhook'] ?? true);
-        $model->settings = $data['settings'] ?? [];
+        $settings = (array) ($model->settings ?? []);
+        if (array_key_exists('settings', $data) && is_array($data['settings'])) {
+            $settings = array_merge($settings, $data['settings']);
+        }
+        $model->settings = $settings;
         $model->save();
 
         return $model;
