@@ -33,10 +33,11 @@ class PaymentGatewayService
     {
         $errors = [];
 
-        // Store ID de PayPhone para comercios EC suele ser numerico (RUC/identificador de tienda).
-        // Evitamos que se use por error client_id / identifier alfanumerico.
-        if (!preg_match('/^[0-9]{10,20}$/', $storeId)) {
-            $errors[] = 'store/merchant id invalido (debe ser numerico, 10-20 digitos)';
+        // PayPhone puede manejar store id numerico o UUID segun cuenta/configuracion.
+        $isNumericStore = preg_match('/^[0-9]{6,25}$/', $storeId) === 1;
+        $isUuidStore = preg_match('/^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/', $storeId) === 1;
+        if (!$isNumericStore && !$isUuidStore) {
+            $errors[] = 'store/merchant id invalido (usa el store id real de PayPhone: numerico o UUID)';
         }
 
         // Token largo tipo bearer emitido por PayPhone Developer.
