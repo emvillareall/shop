@@ -27,20 +27,16 @@ use App\Http\Controllers\ProveedoreController;
 use App\Http\Controllers\StockReservaMetricsController;
 use App\Http\Controllers\TiendaController;
 use App\Http\Controllers\VentaController;
-use App\Models\LineasRopa;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 
 Route::get('/', function () {
-    $lineasLanding = LineasRopa::query()
-        ->where('estado_linea', 1)
-        ->orderBy('nombre_linea')
-        ->get();
-
-    return view('landing', compact('lineasLanding'));
+    return view('landing');
 });
-Route::get('/catalogo', [CatalogoController::class, 'catalogoGeneral'])->name('catalogo.general');
-Route::get('/catalogo/descargar', [CatalogoController::class, 'descargarCatalogoPDF'])->name('catalogo.descargar');
+Route::middleware('storefront')->group(function () {
+    Route::get('/catalogo', [CatalogoController::class, 'catalogoGeneral'])->name('catalogo.general');
+    Route::get('/catalogo/descargar', [CatalogoController::class, 'descargarCatalogoPDF'])->name('catalogo.descargar');
+});
 
 // Auth
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -145,19 +141,21 @@ Route::post('event/suscribirse/{id}', [App\Http\Controllers\EventController::cla
     ->name('event.subscribe.store');
 
 // Public ecommerce (modern only)
-Route::get('/shop', [EcommerceController::class, 'home'])->name('ecommerce.home');
-Route::get('/shop/catalogo', [EcommerceController::class, 'catalogo'])->name('ecommerce.productos.index');
-Route::get('/shop/categoria/{categoria}', [EcommerceController::class, 'categoria'])->name('ecommerce.categoria.show');
-Route::get('/shop/producto/{producto}', [EcommerceController::class, 'producto'])->name('ecommerce.productos.show');
-Route::get('/shop/api/productos/{producto}/variantes', [ProductoVarianteController::class, 'shop'])
-    ->middleware('throttle:120,1')
-    ->name('ecommerce.productos.variantes');
-Route::get('/shop/carrito', [EcommerceController::class, 'carrito'])->name('ecommerce.carrito.index');
-Route::get('/shop/checkout', [EcommerceController::class, 'checkout'])->name('ecommerce.checkout.index');
-Route::get('/shop/pedido-confirmado/{pedido}', [EcommerceController::class, 'confirmado'])->name('ecommerce.pedido.confirmado');
-Route::post('/shop/carrito/agregar', [EcommerceController::class, 'agregarCarrito'])->name('ecommerce.carrito.agregar');
-Route::post('/shop/carrito/eliminar/{index}', [EcommerceController::class, 'eliminarItemCarrito'])->name('ecommerce.carrito.eliminar');
-Route::post('/shop/carrito/vaciar', [EcommerceController::class, 'vaciarCarrito'])->name('ecommerce.carrito.vaciar');
+Route::middleware('storefront')->group(function () {
+    Route::get('/shop', [EcommerceController::class, 'home'])->name('ecommerce.home');
+    Route::get('/shop/catalogo', [EcommerceController::class, 'catalogo'])->name('ecommerce.productos.index');
+    Route::get('/shop/categoria/{categoria}', [EcommerceController::class, 'categoria'])->name('ecommerce.categoria.show');
+    Route::get('/shop/producto/{producto}', [EcommerceController::class, 'producto'])->name('ecommerce.productos.show');
+    Route::get('/shop/api/productos/{producto}/variantes', [ProductoVarianteController::class, 'shop'])
+        ->middleware('throttle:120,1')
+        ->name('ecommerce.productos.variantes');
+    Route::get('/shop/carrito', [EcommerceController::class, 'carrito'])->name('ecommerce.carrito.index');
+    Route::get('/shop/checkout', [EcommerceController::class, 'checkout'])->name('ecommerce.checkout.index');
+    Route::get('/shop/pedido-confirmado/{pedido}', [EcommerceController::class, 'confirmado'])->name('ecommerce.pedido.confirmado');
+    Route::post('/shop/carrito/agregar', [EcommerceController::class, 'agregarCarrito'])->name('ecommerce.carrito.agregar');
+    Route::post('/shop/carrito/eliminar/{index}', [EcommerceController::class, 'eliminarItemCarrito'])->name('ecommerce.carrito.eliminar');
+    Route::post('/shop/carrito/vaciar', [EcommerceController::class, 'vaciarCarrito'])->name('ecommerce.carrito.vaciar');
+});
 
 // Media delivery from local DB-backed files
 Route::get('/media/productos/{filename}', [MediaController::class, 'producto'])
@@ -170,7 +168,7 @@ Route::middleware(['throttle:60,1'])->group(function () {
     Route::get('/payments/{gateway}/{pago}/cancel', [PaymentFlowController::class, 'providerCancel'])->name('payments.cancel');
 });
 Route::get('/checkout/payphone/{pago}', [PaymentFlowController::class, 'payphoneBox'])
-    ->middleware('throttle:60,1')
+    ->middleware(['storefront', 'throttle:60,1'])
     ->name('payments.payphone.box');
 
 Route::post('/webhooks/paypal', [PaymentWebhookController::class, 'paypal'])

@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'storefront_open' => (bool) env('SECURITY_STOREFRONT_OPEN', false),
+
     'features' => [
         // Compatibilidad legacy controlada
         'legacy_pdf_bridge' => (bool) env('SECURITY_LEGACY_PDF_BRIDGE', false),
