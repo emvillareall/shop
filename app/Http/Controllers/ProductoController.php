@@ -31,9 +31,67 @@ class ProductoController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-public function index()
+public function index(Request $request)
 {
-    return view('producto.index');
+    $filters = [
+        'search' => trim((string) $request->query('search', '')),
+        'linea' => trim((string) $request->query('linea', '')),
+        'categoria' => trim((string) $request->query('categoria', '')),
+        'estado_stock' => trim((string) $request->query('estado_stock', '')),
+        'precio_min' => trim((string) $request->query('precio_min', '')),
+        'precio_max' => trim((string) $request->query('precio_max', '')),
+    ];
+
+    $precioMin = str_replace(',', '.', $filters['precio_min']);
+    $precioMax = str_replace(',', '.', $filters['precio_max']);
+
+    if ($precioMin !== '' && $precioMax !== '' && is_numeric($precioMin) && is_numeric($precioMax) && (float) $precioMin > (float) $precioMax) {
+        [$precioMin, $precioMax] = [$precioMax, $precioMin];
+    }
+
+    $query = Producto::query()
+        ->with(['coloresStock.color', 'categoria.linea'])
+        ->withSum('coloresStock as stock_variante_total', 'stock_por_color')
+        ->when($filters['search'] !== '', function ($q) use ($filters) {
+            $q->where(function ($sub) use ($filters) {
+                $sub->where('codigo_producto', 'like', '%' . $filters['search'] . '%')
+                    ->orWhere('descripcion_producto', 'like', '%' . $filters['search'] . '%');
+            });
+        })
+        ->when($filters['linea'] !== '', function ($q) use ($filters) {
+            $lineaId = (int) $filters['linea'];
+            $q->whereHas('categoria', fn ($rel) => $rel->where('linea_ropa_id', $lineaId));
+        })
+        ->when($filters['categoria'] !== '', function ($q) use ($filters) {
+            $q->where('categoria_producto_id', (int) $filters['categoria']);
+        })
+        ->when($precioMin !== '' && is_numeric($precioMin), function ($q) use ($precioMin) {
+            $q->where('precio_venta_producto', '>=', (float) $precioMin);
+        })
+        ->when($precioMax !== '' && is_numeric($precioMax), function ($q) use ($precioMax) {
+            $q->where('precio_venta_producto', '<=', (float) $precioMax);
+        })
+        ->when($filters['estado_stock'] !== '', function ($q) use ($filters) {
+            $stockExpr = '(SELECT COALESCE(SUM(cp.stock_por_color),0) FROM colores_productos cp WHERE cp.producto_id = productos.id)';
+            if ($filters['estado_stock'] === 'agotado') {
+                $q->whereRaw("$stockExpr <= 0");
+            } elseif ($filters['estado_stock'] === 'poco') {
+                $q->whereRaw("$stockExpr > 0 AND $stockExpr <= 5");
+            } elseif ($filters['estado_stock'] === 'disponible') {
+                $q->whereRaw("$stockExpr > 5");
+            }
+        })
+        ->orderByDesc('id');
+
+    $productos = $query->paginate(15)->appends($request->query());
+
+    $lineas = LineasRopa::query()->orderBy('nombre_linea')->get(['id', 'nombre_linea']);
+    $categorias = CategoriasProducto::query()
+        ->when($filters['linea'] !== '', fn ($q) => $q->where('linea_ropa_id', (int) $filters['linea']))
+        ->orderBy('nombre_categoria')
+        ->get(['id', 'nombre_categoria', 'linea_ropa_id']);
+
+    return view('producto.index', compact('productos', 'lineas', 'categorias', 'filters'));
 }
 
 
@@ -351,6 +409,17 @@ public function update(Request $request, Producto $producto)
 
         return redirect()->route('productos.index')
             ->with('success', 'Producto deleted successfully');
+    }
+
+    public function categoriasPorLinea(int $lineaId)
+    {
+        $categorias = CategoriasProducto::query()
+            ->where('linea_ropa_id', $lineaId)
+            ->where('estado_categoria', 1)
+            ->orderBy('nombre_categoria')
+            ->get(['id', 'nombre_categoria']);
+
+        return response()->json($categorias);
     }
 }
 

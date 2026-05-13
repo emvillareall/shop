@@ -68,7 +68,9 @@
                         </div>
                     </div>
                 </div>
-                {!! $categoriasProductos->links() !!}
+                <div class="mt-3 d-flex justify-content-center">
+                    {{ $categoriasProductos->links('vendor.pagination.admin-clean') }}
+                </div>
             </div>
         </div>
     </div>

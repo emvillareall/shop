@@ -73,6 +73,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('pedidos/{pedido}/confirmar-pago-social', [PedidoController::class, 'confirmarPagoSocial'])->name('pedidos.confirmar_pago_social');
     Route::resource('proveedores', ProveedoreController::class);
     Route::resource('productos', ProductoController::class);
+    Route::get('lineas/{linea}/categorias', [ProductoController::class, 'categoriasPorLinea'])
+        ->name('lineas.categorias');
     Route::resource('compras', CompraController::class);
     Route::post('compras/{compra}/ajustar-inventario', [CompraController::class, 'ajustarInventario'])->name('compras.ajustar_inventario');
     Route::post('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
