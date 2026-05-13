@@ -34,11 +34,6 @@
                 debugNode.classList.remove('hidden');
             };
 
-            if (!window.PPaymentButtonBox) {
-                showDebug('No se pudo cargar el SDK de PayPhone. Verifica internet, dominio autorizado y consola del navegador.');
-                return;
-            }
-
             if (!data.storeId || !data.token || !data.responseUrl) {
                 showDebug('Falta configuracion de PayPhone (storeId/token/responseUrl). Revisa Pasarelas.');
                 return;
@@ -48,7 +43,7 @@
                 showDebug('PayPhone requiere HTTPS para funcionar correctamente en web.');
             }
 
-            try {
+            const renderBox = () => {
                 console.info('PayPhone debug', {
                     storeId: data.storeId,
                     currency: data.currency,
@@ -75,10 +70,28 @@
                     buttonColor: '#7c3aed',
                     buttonTextColor: '#ffffff',
                 }).render('pp-button');
-            } catch (e) {
-                console.error('PayPhone render error', e);
-                showDebug('PayPhone no pudo renderizar la cajita. Revisa dominio, storeId, modo (sandbox/produccion) y autorizacion en PayPhone Developer.');
-            }
+            };
+
+            let attempts = 0;
+            const maxAttempts = 30; // ~6s
+            const timer = setInterval(() => {
+                attempts++;
+                if (window.PPaymentButtonBox) {
+                    clearInterval(timer);
+                    try {
+                        renderBox();
+                    } catch (e) {
+                        console.error('PayPhone render error', e);
+                        showDebug('PayPhone no pudo renderizar la cajita. Revisa dominio, storeId, modo (sandbox/produccion) y autorizacion en PayPhone Developer.');
+                    }
+                    return;
+                }
+
+                if (attempts >= maxAttempts) {
+                    clearInterval(timer);
+                    showDebug('No se pudo cargar el SDK de PayPhone. Verifica internet, dominio autorizado y consola del navegador.');
+                }
+            }, 200);
         })();
     </script>
 @endpush
