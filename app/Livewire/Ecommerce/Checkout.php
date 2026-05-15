@@ -11,6 +11,7 @@ use App\Models\PagoTransferencia;
 use App\Models\Pedido;
 use App\Services\Inventario\InventarioService;
 use App\Services\Inventario\StockReservaService;
+use App\Services\Parametros\GlobalParameterService;
 use App\Services\Pagos\PaymentGatewayService;
 use App\Services\Pagos\PaymentConfigService;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,7 @@ class Checkout extends Component
     protected StockReservaService $stockReservaService;
     protected PaymentGatewayService $paymentGatewayService;
     protected PaymentConfigService $paymentConfigService;
+    protected GlobalParameterService $globalParameterService;
 
     public array $items = [];
     public string $cedula = '';
@@ -46,6 +48,8 @@ class Checkout extends Component
     public int $secondsRemaining = 0;
     public bool $paypalDisponible = false;
     public bool $payphoneDisponible = false;
+    public float $ivaPercent = 0;
+    public float $payphoneFeePercent = 0;
 
     protected array $validationAttributes = [
         'cedula' => 'cedula / identificacion',
@@ -74,13 +78,15 @@ class Checkout extends Component
         InventarioService $inventarioService,
         StockReservaService $stockReservaService,
         PaymentGatewayService $paymentGatewayService,
-        PaymentConfigService $paymentConfigService
+        PaymentConfigService $paymentConfigService,
+        GlobalParameterService $globalParameterService
     ): void
     {
         $this->inventarioService = $inventarioService;
         $this->stockReservaService = $stockReservaService;
         $this->paymentGatewayService = $paymentGatewayService;
         $this->paymentConfigService = $paymentConfigService;
+        $this->globalParameterService = $globalParameterService;
     }
 
     protected function rules(): array
@@ -183,7 +189,9 @@ class Checkout extends Component
             $comprobantePath = $this->comprobante_transferencia->store('comprobantes/transferencias', 'public');
         }
 
-        [$pedido, $pago] = DB::transaction(function () use ($items, $comprobantePath) {
+        $breakdown = $this->calcularTotales($items);
+
+        [$pedido, $pago] = DB::transaction(function () use ($items, $comprobantePath, $breakdown) {
             $estadoPedido = $this->metodo_pago === 'transferencia' ? 'PAGO_EN_REVISION' : 'PENDIENTE_PAGO';
             $estadoPago = $this->metodo_pago === 'transferencia' ? 'EN_REVISION' : 'PENDIENTE';
 
@@ -202,7 +210,7 @@ class Checkout extends Component
                 'confirmado_at' => now(),
             ]);
 
-            $total = 0;
+            $subtotalBase = 0;
             foreach ($items as $item) {
                 $this->inventarioService->descontarVariante(
                     (int) $item['producto_id'],
@@ -228,23 +236,34 @@ class Checkout extends Component
                     'estado_dtpedidos' => 1,
                 ]);
 
-                $total += ((float) $item['precio']) * ((int) $item['cantidad']);
+                $subtotalBase += ((float) $item['precio']) * ((int) $item['cantidad']);
             }
 
             $pedido->update([
-                'subtotal_pedido' => $total,
-                'total_pedido' => $total,
+                'subtotal_pedido' => $breakdown['subtotal_base'],
+                'iva_pedido' => $breakdown['iva_monto'],
+                'descuentos_pedido' => $breakdown['descuento_monto'],
+                'total_pedido' => $breakdown['total_final'],
             ]);
 
             $pago = Pago::create([
                 'pedido_id' => $pedido->id,
                 'metodo' => $this->metodo_pago,
                 'estado' => $estadoPago,
-                'monto' => $total,
+                'monto' => $breakdown['total_final'],
                 'moneda' => 'USD',
                 'referencia_externa' => $this->referencia_transferencia,
                 'comprobante_path' => $comprobantePath,
-                'metadata' => ['origen' => 'checkout_shop'],
+                'metadata' => [
+                    'origen' => 'checkout_shop',
+                    'subtotal_base' => $breakdown['subtotal_base'],
+                    'iva_percent' => $breakdown['iva_percent'],
+                    'iva_monto' => $breakdown['iva_monto'],
+                    'payphone_fee_percent' => $breakdown['payphone_fee_percent'],
+                    'payphone_fee_monto' => $breakdown['payphone_fee_monto'],
+                    'descuento_monto' => $breakdown['descuento_monto'],
+                    'total_final' => $breakdown['total_final'],
+                ],
             ]);
 
             if ($this->metodo_pago === 'transferencia') {
@@ -326,9 +345,41 @@ class Checkout extends Component
 
     public function getTotalProperty(): float
     {
-        return collect($this->items)->sum(
-            fn ($item) => ((float) ($item['precio'] ?? 0)) * ((int) ($item['cantidad'] ?? 0))
+        return $this->getPricingBreakdownProperty()['total_final'];
+    }
+
+    public function getPricingBreakdownProperty(): array
+    {
+        return $this->calcularTotales($this->items);
+    }
+
+    private function calcularTotales(array $items): array
+    {
+        $subtotalBase = round(
+            collect($items)->sum(fn ($item) => ((float) ($item['precio'] ?? 0)) * ((int) ($item['cantidad'] ?? 0))),
+            2
         );
+
+        $ivaPercent = max(0, (float) $this->ivaPercent);
+        $payphoneFeePercent = max(0, (float) $this->payphoneFeePercent);
+
+        $ivaMonto = round($subtotalBase * ($ivaPercent / 100), 2);
+        $payphoneFeeMonto = $this->metodo_pago === 'payphone'
+            ? round($subtotalBase * ($payphoneFeePercent / 100), 2)
+            : 0.0;
+
+        $descuentoMonto = 0.0;
+        $totalFinal = round($subtotalBase + $ivaMonto + $payphoneFeeMonto - $descuentoMonto, 2);
+
+        return [
+            'subtotal_base' => $subtotalBase,
+            'iva_percent' => $ivaPercent,
+            'iva_monto' => $ivaMonto,
+            'payphone_fee_percent' => $payphoneFeePercent,
+            'payphone_fee_monto' => $payphoneFeeMonto,
+            'descuento_monto' => $descuentoMonto,
+            'total_final' => max(0, $totalFinal),
+        ];
     }
 
     public function mount(): void
@@ -336,6 +387,15 @@ class Checkout extends Component
         $fakeMode = (bool) config('payments.fake_mode', false);
         $this->paypalDisponible = $fakeMode || $this->paymentConfigService->isAvailable('paypal');
         $this->payphoneDisponible = $fakeMode || $this->paymentConfigService->isAvailable('payphone');
+        $cfgPayphone = $this->paymentConfigService->get('payphone');
+        $this->ivaPercent = $this->globalParameterService->getNumber(
+            'iva_general',
+            (float) data_get($cfgPayphone, 'settings.iva_percent', 0)
+        );
+        $this->payphoneFeePercent = $this->globalParameterService->getNumber(
+            'recargo_payphone',
+            (float) data_get($cfgPayphone, 'settings.payphone_fee_percent', 0)
+        );
 
         if (!$this->paypalDisponible && $this->metodo_pago === 'paypal') {
             $this->metodo_pago = 'transferencia';

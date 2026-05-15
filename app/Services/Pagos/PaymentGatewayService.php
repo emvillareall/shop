@@ -56,6 +56,11 @@ class PaymentGatewayService
         }
     }
 
+    private function toCents(float|int|string $amount): int
+    {
+        return (int) round(((float) $amount) * 100);
+    }
+
     private function paypalAccessToken(): string
     {
         $cfg = $this->configService->get('paypal');
@@ -210,19 +215,34 @@ class PaymentGatewayService
         $this->validatePayphoneRuntimeConfig($storeId, $token, $baseUrl);
 
         $clientTxId = 'PP-' . $pago->pedido_id . '-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(5));
-        $amountCents = (int) round(((float) $pago->monto) * 100);
+        $metadata = (array) ($pago->metadata ?? []);
+        $subtotalBase = (float) data_get($metadata, 'subtotal_base', $pago->monto);
+        $ivaMonto = (float) data_get($metadata, 'iva_monto', 0);
+        $payphoneFeeMonto = (float) data_get($metadata, 'payphone_fee_monto', 0);
+
+        $amountCents = $this->toCents($pago->monto);
         if ($amountCents <= 0) {
             throw new \RuntimeException('Monto invalido para PayPhone.');
         }
 
-        // Ajuste simple por ahora: todo como monto sin IVA para no romper flujo actual.
-        $amountWithoutTax = $amountCents;
-        $amountWithTax = 0;
-        $tax = 0;
-        $service = 0;
+        // Checkout ecommerce: subtotal como base gravada, IVA separado y recargo PayPhone en service.
+        $amountWithTax = max(0, $this->toCents($subtotalBase));
+        $amountWithoutTax = 0;
+        $tax = max(0, $this->toCents($ivaMonto));
+        $service = max(0, $this->toCents($payphoneFeeMonto));
         $tip = 0;
 
-        if ($amountCents !== ($amountWithoutTax + $amountWithTax + $tax + $service + $tip)) {
+        $sumCents = $amountWithoutTax + $amountWithTax + $tax + $service + $tip;
+        if ($amountCents !== $sumCents) {
+            // Ajuste de redondeo: corrige diferencia minima sobre service para mantener consistencia.
+            $delta = $amountCents - $sumCents;
+            if (abs($delta) <= 1) {
+                $service += $delta;
+                $sumCents = $amountWithoutTax + $amountWithTax + $tax + $service + $tip;
+            }
+        }
+
+        if ($amountCents !== $sumCents) {
             throw new \RuntimeException('Los montos de PayPhone no cuadran.');
         }
 

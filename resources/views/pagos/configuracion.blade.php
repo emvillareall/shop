@@ -82,6 +82,20 @@
                             <input class="form-control" name="verify_path" value="{{ $payphone['verify_path'] ?? '/sale/{id}' }}">
                         </div>
                     </div>
+                    <div class="grid gap-3 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Recargo PayPhone (%)</label>
+                            <input class="form-control" type="number" step="0.01" min="0" max="100" name="payphone_fee_percent"
+                                   value="{{ data_get($payphone, 'settings.payphone_fee_percent', 0) }}">
+                            <p class="mt-1 text-xs text-slate-500">Se aplica solo cuando el cliente paga con PayPhone.</p>
+                        </div>
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">IVA (%)</label>
+                            <input class="form-control" type="number" step="0.01" min="0" max="100" name="iva_percent"
+                                   value="{{ data_get($payphone, 'settings.iva_percent', 0) }}">
+                            <p class="mt-1 text-xs text-slate-500">Por ahora puede quedar en 0 y activarse cuando la tienda lo requiera.</p>
+                        </div>
+                    </div>
                     <label class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                         <input type="checkbox" name="strict_webhook" value="1" @checked($payphone['strict_webhook'] ?? true)>
                         Validacion estricta de webhook

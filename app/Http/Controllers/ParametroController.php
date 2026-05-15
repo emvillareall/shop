@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Parametro;
+use App\Services\Parametros\GlobalParameterService;
 use Illuminate\Http\Request;
 
 /**
@@ -11,6 +12,9 @@ use Illuminate\Http\Request;
  */
 class ParametroController extends Controller
 {
+    public function __construct(
+        private readonly GlobalParameterService $globalParameterService
+    ) {}
     /**
      * Display a listing of the resource.
      *
@@ -18,6 +22,7 @@ class ParametroController extends Controller
      */
     public function index()
     {
+        $this->globalParameterService->ensureDefaults();
         $parametros = Parametro::paginate();
 
         return view('parametro.index', compact('parametros'))
@@ -52,7 +57,7 @@ class ParametroController extends Controller
         $parametro = Parametro::create($validated);
 
         return redirect()->route('parametros.index')
-            ->with('success', 'Parametro created successfully.');
+            ->with('success', 'Parametro creado correctamente.');
     }
 
     /**
@@ -99,7 +104,7 @@ class ParametroController extends Controller
         $parametro->update($validated);
 
         return redirect()->route('parametros.index')
-            ->with('success', 'Parametro updated successfully');
+            ->with('success', 'Parametro actualizado correctamente.');
     }
 
     /**
@@ -112,6 +117,6 @@ class ParametroController extends Controller
         $parametro = Parametro::find($id)->delete();
 
         return redirect()->route('parametros.index')
-            ->with('success', 'Parametro deleted successfully');
+            ->with('success', 'Parametro eliminado correctamente.');
     }
 }

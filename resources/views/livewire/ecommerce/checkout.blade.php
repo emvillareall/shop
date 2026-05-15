@@ -115,7 +115,25 @@
             @endforelse
         </div>
         <div class="border-t border-purple-100 pt-3">
-            <p class="text-lg font-bold">Total: ${{ number_format($this->total, 2) }}</p>
+            <div class="space-y-1 text-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600">Subtotal</span>
+                    <span class="font-semibold">${{ number_format($this->pricingBreakdown['subtotal_base'], 2) }}</span>
+                </div>
+                @if($this->pricingBreakdown['iva_percent'] > 0 && $this->pricingBreakdown['iva_monto'] > 0)
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600">IVA ({{ number_format($this->pricingBreakdown['iva_percent'], 2) }}%)</span>
+                        <span class="font-semibold">${{ number_format($this->pricingBreakdown['iva_monto'], 2) }}</span>
+                    </div>
+                @endif
+                @if($metodo_pago === 'payphone')
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600">Recargo PayPhone ({{ number_format($this->pricingBreakdown['payphone_fee_percent'], 2) }}%)</span>
+                        <span class="font-semibold">${{ number_format($this->pricingBreakdown['payphone_fee_monto'], 2) }}</span>
+                    </div>
+                @endif
+            </div>
+            <p class="mt-2 text-lg font-bold">Total: ${{ number_format($this->total, 2) }}</p>
             <p class="mt-2 inline-flex rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
                 Reserva activa:
                 {{ str_pad((string) floor($secondsRemaining / 60), 2, '0', STR_PAD_LEFT) }}:{{ str_pad((string) ($secondsRemaining % 60), 2, '0', STR_PAD_LEFT) }}

@@ -39,6 +39,8 @@ class PaymentGatewayConfigController extends Controller
             'webhook_secret' => 'nullable|string|max:4096',
             'verify_path' => 'nullable|string|max:120',
             'strict_webhook' => 'nullable|boolean',
+            'payphone_fee_percent' => 'nullable|numeric|min:0|max:100',
+            'iva_percent' => 'nullable|numeric|min:0|max:100',
         ];
 
         $data = $request->validate($rules);
@@ -54,7 +56,12 @@ class PaymentGatewayConfigController extends Controller
             $storeId = trim((string) ($data['store_id'] ?? ''));
             $data['settings'] = array_merge((array) ($data['settings'] ?? []), [
                 'store_id' => $storeId !== '' ? $storeId : null,
+                'payphone_fee_percent' => (float) ($data['payphone_fee_percent'] ?? 0),
+                'iva_percent' => (float) ($data['iva_percent'] ?? 0),
             ]);
+        }
+        if ($gateway === 'paypal') {
+            unset($data['payphone_fee_percent'], $data['iva_percent']);
         }
         unset($data['store_id']);
 
