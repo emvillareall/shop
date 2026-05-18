@@ -46,6 +46,7 @@
         if (empty($allThumbs)) {
             $allThumbs = collect($imageMeta)->pluck('url')->filter()->unique()->values()->all();
         }
+        $fallbackImage = $producto->imageUrl();
         $imageColorMap = [];
         foreach ($imageMeta as $meta) {
             $url = (string) ($meta['url'] ?? '');
@@ -72,6 +73,7 @@
             imageMeta: @js($imageMeta),
             allThumbs: @js($allThumbs),
             imageColorMap: @js($imageColorMap),
+            fallbackImage: @js($fallbackImage),
             activeImage: '',
             syncingFromThumb: false,
             tallas() { return this.stockData.filter(i => i.color_id === Number(this.colorId)); },
@@ -93,7 +95,7 @@
                 return found ? (found.color_nombre || '') : '';
             },
             init() {
-                this.activeImage = this.allThumbs.length ? this.allThumbs[0] : ('{{ $producto->imageUrl() }}');
+                this.activeImage = this.allThumbs.length ? this.allThumbs[0] : this.fallbackImage;
                 this.$watch('colorId', () => {
                     const list = this.imagesForCurrentColor();
                     if (list && list.length) {
@@ -130,7 +132,7 @@
             <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
                     <div class="flex h-[24rem] w-full items-center justify-center lg:h-[30rem]">
-                        <img :src="activeImage || '{{ $producto->imageUrl() }}'"
+                        <img :src="activeImage || fallbackImage"
                              alt="{{ $producto->descripcion_producto }}"
                              class="h-full w-full object-contain"
                              loading="lazy"
