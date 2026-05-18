@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\CategoriasProductoController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ColoreController;
 use App\Http\Controllers\ColoresProductoController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\DetallePedidoController;
@@ -81,6 +82,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('parametros', ParametroController::class);
     Route::resource('detalle-pedidos', DetallePedidoController::class);
     Route::resource('colores-productos', ColoresProductoController::class);
+    Route::resource('colores', ColoreController::class);
     Route::resource('categorias-productos', CategoriasProductoController::class);
     Route::resource('lineas-ropa', LineasRopaController::class);
     Route::get('pagos', [PagoController::class, 'index'])->name('pagos.index');

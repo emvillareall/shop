@@ -5,8 +5,9 @@
         ['route' => 'tiendas.index', 'label' => 'Tiendas', 'icon' => 'fa-solid fa-shop'],
         ['route' => 'pedidos.index', 'label' => 'Pedidos', 'icon' => 'fa-solid fa-truck-fast'],
         ['route' => 'proveedores.index', 'label' => 'Proveedores', 'icon' => 'fa-solid fa-boxes-stacked'],
-        ['route' => 'categorias-productos.index', 'label' => 'Categorías', 'icon' => 'fa-solid fa-layer-group'],
-        ['route' => 'lineas-ropa.index', 'label' => 'Líneas Ropa', 'icon' => 'fa-solid fa-shirt'],
+        ['route' => 'categorias-productos.index', 'label' => 'Categorias', 'icon' => 'fa-solid fa-layer-group'],
+        ['route' => 'colores.index', 'label' => 'Colores', 'icon' => 'fa-solid fa-palette'],
+        ['route' => 'lineas-ropa.index', 'label' => 'Lineas Ropa', 'icon' => 'fa-solid fa-shirt'],
         ['route' => 'productos.index', 'label' => 'Productos', 'icon' => 'fa-solid fa-bag-shopping'],
         ['route' => 'compras.index', 'label' => 'Compras', 'icon' => 'fa-solid fa-receipt'],
         ['route' => 'ventas.index', 'label' => 'Ventas', 'icon' => 'fa-solid fa-cash-register'],
@@ -29,3 +30,4 @@
         <span>{{ $item['label'] }}</span>
     </a>
 @endforeach
+
