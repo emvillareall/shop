@@ -45,11 +45,11 @@
                     <div class="productos-filtros-grid">
                         <input type="text" name="search"
                                value="{{ $filters['search'] ?? '' }}"
-                               placeholder="Buscar por código o descripción..."
+                               placeholder="Buscar por codigo o descripcion..."
                                class="productos-filtro-control rounded-md border border-slate-300">
 
                         <select id="filtro-linea" name="linea" class="productos-filtro-control rounded-md border border-slate-300">
-                            <option value="">Todas las líneas</option>
+                            <option value="">Todas las lineas</option>
                             @foreach($lineas as $lineaOpt)
                                 <option value="{{ $lineaOpt->id }}" @selected(($filters['linea'] ?? '') == (string) $lineaOpt->id)>
                                     {{ $lineaOpt->nombre_linea }}
@@ -58,7 +58,7 @@
                         </select>
 
                         <select id="filtro-categoria" name="categoria" class="productos-filtro-control rounded-md border border-slate-300">
-                            <option value="">Todas las categorías</option>
+                            <option value="">Todas las categorias</option>
                             @foreach($categorias as $categoriaOpt)
                                 <option value="{{ $categoriaOpt->id }}"
                                         data-linea="{{ $categoriaOpt->linea_ropa_id }}"
@@ -77,12 +77,12 @@
 
                         <input type="number" step="0.01" min="0" name="precio_min"
                                value="{{ $filters['precio_min'] ?? '' }}"
-                               placeholder="Precio mín."
+                               placeholder="Precio min."
                                class="productos-filtro-control rounded-md border border-slate-300">
 
                         <input type="number" step="0.01" min="0" name="precio_max"
                                value="{{ $filters['precio_max'] ?? '' }}"
-                               placeholder="Precio máx."
+                               placeholder="Precio max."
                                class="productos-filtro-control rounded-md border border-slate-300">
 
                         <div class="flex items-center gap-2">
@@ -98,10 +98,10 @@
                             <tr>
                                 <th>#</th>
                                 <th>Imagen</th>
-                                <th>Código</th>
-                                <th>Descripción</th>
+                                <th>Codigo</th>
+                                <th>Descripcion</th>
                                 <th>Stock por color/talla</th>
-                                <th>Precio (₱)</th>
+                                <th>Precio (P)</th>
                                 <th>Precio ($)</th>
                                 <th>Venta</th>
                                 <th>Compra ID</th>
@@ -147,7 +147,7 @@
                                         <div class="flex flex-wrap gap-1">
                                             <a class="btn btn-primary btn-sm" href="{{ route('productos.show', $producto->id) }}">Ver</a>
                                             <a class="btn btn-success btn-sm" href="{{ route('productos.edit', $producto->id) }}">Editar</a>
-                                            <form action="{{ route('productos.destroy', $producto->id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar este producto?')">
+                                            <form action="{{ route('productos.destroy', $producto->id) }}" method="POST" onsubmit="return confirm('Seguro que deseas eliminar este producto?')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>

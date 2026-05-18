@@ -17,7 +17,48 @@
         ])->values();
         $disponibilidad = $producto->disponibilidadTexto();
         $disponibilidadClase = $producto->disponibilidadTextClass();
-        $image = $producto->imageUrl();
+        $defaultImages = $producto->allImageUrls();
+        $imagesByColor = [];
+        $imageMeta = [];
+        $imagenesActivas = $producto->imagenes()->where('activo', true)->orderByDesc('es_principal')->orderBy('orden')->get();
+        foreach ($producto->coloresStock->groupBy('colores_id') as $colorId => $itemsColor) {
+            $urls = $imagenesActivas
+                ->where('color_id', (int) $colorId)
+                ->pluck('ruta')
+                ->filter()
+                ->map(fn ($ruta) => route('media.producto', ['filename' => ltrim((string) $ruta, '/')]))
+                ->unique()
+                ->values()
+                ->all();
+            $imagesByColor[(int) $colorId] = $urls;
+            foreach ($urls as $url) {
+                $imageMeta[] = [
+                    'url' => $url,
+                    'color_id' => (int) $colorId,
+                ];
+            }
+        }
+        $allThumbs = collect($defaultImages)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        if (empty($allThumbs)) {
+            $allThumbs = collect($imageMeta)->pluck('url')->filter()->unique()->values()->all();
+        }
+        $imageColorMap = [];
+        foreach ($imageMeta as $meta) {
+            $url = (string) ($meta['url'] ?? '');
+            $colorId = $meta['color_id'] ?? null;
+            if ($url === '' || $colorId === null) {
+                continue;
+            }
+            $imageColorMap[$url] ??= [];
+            $imageColorMap[$url][] = (int) $colorId;
+        }
+        foreach ($imageColorMap as $url => $ids) {
+            $imageColorMap[$url] = array_values(array_unique($ids));
+        }
     @endphp
 
     <div class="grid gap-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-2 lg:p-6"
@@ -26,21 +67,91 @@
             talla: '',
             cantidad: 1,
             stockData: @js($stockData),
+            defaultImages: @js($defaultImages),
+            imagesByColor: @js($imagesByColor),
+            imageMeta: @js($imageMeta),
+            allThumbs: @js($allThumbs),
+            imageColorMap: @js($imageColorMap),
+            activeImage: '',
+            syncingFromThumb: false,
             tallas() { return this.stockData.filter(i => i.color_id === Number(this.colorId)); },
+            imagesForCurrentColor() {
+                if (!this.colorId) return [];
+                const byColor = this.imagesByColor[String(this.colorId)] || this.imagesByColor[Number(this.colorId)] || [];
+                return Array.isArray(byColor) && byColor.length ? byColor : [];
+            },
             stockSeleccionado() {
                 const hit = this.stockData.find(i => i.color_id === Number(this.colorId) && i.talla === this.talla);
                 return hit ? Number(hit.stock) : 0;
             },
             puedeComprar() {
                 return this.stockSeleccionado() > 0 && this.talla !== '' && this.colorId !== null && this.cantidad > 0;
+            },
+            colorName() {
+                if (!this.colorId) return '';
+                const found = this.stockData.find(i => i.color_id === Number(this.colorId));
+                return found ? (found.color_nombre || '') : '';
+            },
+            init() {
+                this.activeImage = this.allThumbs.length ? this.allThumbs[0] : ('{{ $producto->imageUrl() }}');
+                this.$watch('colorId', () => {
+                    const list = this.imagesForCurrentColor();
+                    if (list && list.length) {
+                        if (this.syncingFromThumb && this.activeImage && list.includes(this.activeImage)) {
+                            this.syncingFromThumb = false;
+                            return;
+                        }
+                        this.syncingFromThumb = false;
+                        this.activeImage = list[0];
+                    }
+                });
+            },
+            syncColorFromImage(url) {
+                const ids = this.imageColorMap[url] || [];
+                if (!Array.isArray(ids) || ids.length === 0) return;
+                const current = Number(this.colorId || 0);
+                const nextColorId = ids.includes(current) ? current : Number(ids[0] || 0);
+                if (nextColorId > 0 && current !== nextColorId) {
+                    this.syncingFromThumb = true;
+                    this.colorId = nextColorId;
+                    this.talla = '';
+                }
+            },
+            setActiveImage(url, maybeColorId = null) {
+                this.activeImage = url;
+                const parsed = Number(maybeColorId);
+                if (!Number.isNaN(parsed) && parsed > 0 && this.colorId !== parsed) {
+                    this.colorId = parsed;
+                    this.talla = '';
+                }
             }
          }">
         <div>
-            <img src="{{ $image }}"
-                 alt="{{ $producto->descripcion_producto }}"
-                 class="h-[24rem] w-full rounded-xl object-cover lg:h-[30rem]"
-                 loading="lazy"
-                 decoding="async">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                    <div class="flex h-[24rem] w-full items-center justify-center lg:h-[30rem]">
+                        <img :src="activeImage || '{{ $producto->imageUrl() }}'"
+                             alt="{{ $producto->descripcion_producto }}"
+                             class="h-full w-full object-contain"
+                             loading="lazy"
+                             decoding="async">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 flex flex-wrap gap-2">
+                <template x-for="img in allThumbs" :key="img">
+                    <button type="button"
+                            @click="
+                                setActiveImage(img, null);
+                                syncColorFromImage(img);
+                            "
+                            class="h-16 w-16 overflow-hidden rounded-md border border-slate-200 transition hover:border-brand-500"
+                            :class="activeImage === img ? 'ring-2 ring-brand-500' : ''">
+                        <img :src="img" class="h-full w-full object-cover" alt="Miniatura producto">
+                    </button>
+                </template>
+            </div>
         </div>
 
         <div class="space-y-5">
@@ -52,22 +163,21 @@
 
             <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <p class="mb-2 text-sm font-semibold">Colores disponibles</p>
-                <div class="flex flex-wrap gap-2">
+                <div class="mb-3 flex flex-wrap items-center gap-2">
                     @foreach($producto->coloresStock->groupBy('colores_id') as $items)
                         @php $color = $items->first()->color; @endphp
                         @if($color)
                             <button type="button"
-                                    @click="colorId = {{ $color->id }}; talla=''"
+                                    @click="colorId = {{ $color->id }}; talla='';"
                                     :class="colorId === {{ $color->id }} ? 'ring-2 ring-brand-500 border-brand-500' : ''"
                                     class="h-9 w-9 rounded-full border border-slate-300 transition"
                                     style="background-color: {{ $color->codigo_color }};"
                                     title="{{ $color->nombre_color }}"></button>
                         @endif
                     @endforeach
+                    <span x-show="colorName()" class="ml-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600" x-text="colorName()"></span>
                 </div>
-            </div>
 
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <p class="mb-2 text-sm font-semibold">Tallas disponibles</p>
                 <div class="flex flex-wrap gap-2" x-show="colorId">
                     <template x-for="item in tallas()" :key="item.talla">

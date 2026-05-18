@@ -54,15 +54,31 @@
                         </div>
 
                         <div class="form-group">
-    <strong>Imagen del Producto:</strong><br>
-    @if($producto->imagen_producto)
-        <img src="{{ asset('storage/' . $producto->imagen_producto) }}"
-             alt="Imagen Producto"
-             style="max-width:800px; height:auto; border-radius:5px; border:1px solid #ccc;">
-    @else
-        <span class="text-muted">No hay imagen cargada para este producto.</span>
-    @endif
-</div>
+                            <strong>Imagen principal:</strong><br>
+                            <img src="{{ $producto->imageUrl() }}"
+                                 alt="Imagen Producto"
+                                 style="max-width:340px; width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; object-fit:cover;">
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <strong>Galeria del producto:</strong>
+                            @php
+                                $gallery = $producto->allImageUrls();
+                            @endphp
+                            @if(count($gallery))
+                                <div class="d-flex flex-wrap mt-2" style="gap:10px;">
+                                    @foreach($gallery as $url)
+                                        <a href="{{ $url }}" target="_blank" rel="noopener">
+                                            <img src="{{ $url }}"
+                                                 alt="Imagen galeria {{ $loop->iteration }}"
+                                                 style="width:90px;height:90px;border-radius:8px;border:1px solid #cbd5e1;object-fit:cover;">
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-muted mt-2">No hay imagenes cargadas para este producto.</p>
+                            @endif
+                        </div>
 
                     </div>
                 </div>
