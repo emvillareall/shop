@@ -1,6 +1,31 @@
 @extends('layouts.ecommerce', ['title' => 'Producto | Booty Fitness'])
 
 @section('content')
+    <style>
+        .product-main-frame {
+            width: 100%;
+            max-width: 26rem;
+            height: clamp(22rem, 55vh, 34rem);
+            margin-inline: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            background: #fff;
+        }
+
+        .product-main-image {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain !important;
+            object-position: center;
+            display: block;
+        }
+    </style>
+
     <x-ecommerce.breadcrumb :items="[
         ['label' => 'Inicio', 'url' => route('ecommerce.home')],
         ['label' => 'Catalogo', 'url' => route('ecommerce.productos.index')],
@@ -147,10 +172,10 @@
         <div>
             <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
-                    <div class="relative mx-auto flex h-[30rem] w-full max-w-[26rem] items-center justify-center overflow-hidden lg:h-[34rem]">
+                    <div class="product-main-frame">
                         <img :src="activeImage || fallbackImage"
                              alt="{{ $producto->descripcion_producto }}"
-                             class="h-full w-full object-cover object-center"
+                             class="product-main-image"
                              loading="lazy"
                              decoding="async">
                     </div>
