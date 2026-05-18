@@ -47,6 +47,11 @@
             $allThumbs = collect($imageMeta)->pluck('url')->filter()->unique()->values()->all();
         }
         $fallbackImage = $producto->imageUrl();
+        $tienePromo = $producto->tienePromocionActiva();
+        $precioNormal = $producto->precioNormal();
+        $precioFinal = $producto->precioFinal();
+        $descuentoPromo = $producto->porcentajeDescuento();
+        $etiquetaPromo = trim((string) ($producto->promocion_etiqueta ?? ''));
         $imageColorMap = [];
         foreach ($imageMeta as $meta) {
             $url = (string) ($meta['url'] ?? '');
@@ -60,6 +65,17 @@
         foreach ($imageColorMap as $url => $ids) {
             $imageColorMap[$url] = array_values(array_unique($ids));
         }
+        $whatsappRaw = (string) config('services.whatsapp.support_number', '');
+        $whatsappNumber = preg_replace('/\D+/', '', $whatsappRaw);
+        $whatsappMessage = rawurlencode(
+            'Hola, tengo una consulta sobre este producto: ' .
+            $producto->descripcion_producto .
+            ' ($' . number_format((float) $precioFinal, 2) . '). ' .
+            route('ecommerce.productos.show', $producto->id)
+        );
+        $whatsappUrl = $whatsappNumber !== ''
+            ? "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}"
+            : '';
     @endphp
 
     <div class="grid gap-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-2 lg:p-6"
@@ -131,10 +147,10 @@
         <div>
             <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
-                    <div class="flex h-[24rem] w-full items-center justify-center lg:h-[30rem]">
+                    <div class="relative mx-auto flex h-[30rem] w-full max-w-[26rem] items-center justify-center overflow-hidden lg:h-[34rem]">
                         <img :src="activeImage || fallbackImage"
                              alt="{{ $producto->descripcion_producto }}"
-                             class="h-full w-full object-contain"
+                             class="h-full w-full object-cover object-center"
                              loading="lazy"
                              decoding="async">
                     </div>
@@ -159,7 +175,18 @@
         <div class="space-y-5">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900">{{ $producto->descripcion_producto }}</h1>
-                <p class="mt-2 text-3xl font-extrabold text-brand-700">${{ number_format($producto->precio_venta_producto, 2) }}</p>
+                @if($tienePromo)
+                    <div class="mt-2 flex items-center gap-2">
+                        <p class="text-lg font-semibold text-slate-400 line-through">${{ number_format($precioNormal, 2) }}</p>
+                        <span class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">-{{ rtrim(rtrim(number_format($descuentoPromo, 2), '0'), '.') }}%</span>
+                        @if($etiquetaPromo !== '')
+                            <span class="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-bold text-brand-700">{{ $etiquetaPromo }}</span>
+                        @endif
+                    </div>
+                    <p class="text-3xl font-extrabold text-rose-700">${{ number_format($precioFinal, 2) }}</p>
+                @else
+                    <p class="mt-2 text-3xl font-extrabold text-brand-700">${{ number_format($precioNormal, 2) }}</p>
+                @endif
                 <p class="mt-2 text-sm font-semibold {{ $disponibilidadClase }}">Disponibilidad: {{ $disponibilidad }}</p>
             </div>
 
@@ -209,6 +236,22 @@
                 <div class="flex flex-wrap gap-2">
                     <button type="submit" class="btn btn-primary" :disabled="!puedeComprar()">Agregar al carrito</button>
                     <a href="{{ route('ecommerce.productos.index') }}" class="btn btn-secondary">Volver</a>
+                    @if($whatsappUrl !== '')
+                        <a href="{{ $whatsappUrl }}"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                           style="background-color:#16a34a;border:1px solid #15803d;color:#fff;">
+                            Consultar por WhatsApp
+                        </a>
+                    @else
+                        <button type="button"
+                                class="inline-flex cursor-not-allowed items-center rounded-md border border-amber-400 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700"
+                                title="Configura WHATSAPP_SUPPORT_NUMBER en el entorno para activarlo"
+                                disabled>
+                            WhatsApp no configurado
+                        </button>
+                    @endif
                 </div>
                 <p class="text-xs text-slate-500" x-show="talla && stockSeleccionado() > 0">Stock de esta variante: <span x-text="stockSeleccionado()"></span></p>
                 <p class="text-xs text-rose-500" x-show="talla && stockSeleccionado() < 1">La talla seleccionada esta agotada.</p>

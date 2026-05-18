@@ -90,6 +90,48 @@
                 {!! $errors->first('precio_venta_producto', '<div class="invalid-feedback">:message</div>') !!}
             </div>
 
+            <div class="form-group md:col-span-2 xl:col-span-3">
+                <div class="rounded-lg border border-brand-200 bg-brand-50/40 p-3">
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-700">Precio promocional</p>
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+                        <div class="form-group md:col-span-1">
+                            <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Activar promocion</label>
+                            <input type="hidden" name="promocion_activa" value="0">
+                            <label class="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2">
+                                <input type="checkbox" name="promocion_activa" value="1" {{ old('promocion_activa', $producto->promocion_activa ?? false) ? 'checked' : '' }}>
+                                <span class="text-sm font-medium text-slate-700">Promocion activa</span>
+                            </label>
+                            {!! $errors->first('promocion_activa', '<div class="invalid-feedback">:message</div>') !!}
+                        </div>
+                        <div class="form-group md:col-span-1">
+                            <label for="precio_promocional" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Precio promo</label>
+                            {{ Form::number('precio_promocional', old('precio_promocional', $producto->precio_promocional ?? ''), ['id' => 'precio_promocional', 'class' => 'form-control' . ($errors->has('precio_promocional') ? ' is-invalid' : ''), 'placeholder' => '0.00', 'step' => '0.01', 'min' => '0']) }}
+                            {!! $errors->first('precio_promocional', '<div class="invalid-feedback">:message</div>') !!}
+                        </div>
+                        <div class="form-group md:col-span-1">
+                            <label for="promocion_fecha_inicio" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Inicio promo</label>
+                            <input type="datetime-local" id="promocion_fecha_inicio" name="promocion_fecha_inicio"
+                                   value="{{ old('promocion_fecha_inicio', isset($producto->promocion_fecha_inicio) && $producto->promocion_fecha_inicio ? \Illuminate\Support\Carbon::parse($producto->promocion_fecha_inicio)->format('Y-m-d\\TH:i') : '') }}"
+                                   class="form-control{{ $errors->has('promocion_fecha_inicio') ? ' is-invalid' : '' }}">
+                            {!! $errors->first('promocion_fecha_inicio', '<div class="invalid-feedback">:message</div>') !!}
+                        </div>
+                        <div class="form-group md:col-span-1">
+                            <label for="promocion_fecha_fin" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Fin promo</label>
+                            <input type="datetime-local" id="promocion_fecha_fin" name="promocion_fecha_fin"
+                                   value="{{ old('promocion_fecha_fin', isset($producto->promocion_fecha_fin) && $producto->promocion_fecha_fin ? \Illuminate\Support\Carbon::parse($producto->promocion_fecha_fin)->format('Y-m-d\\TH:i') : '') }}"
+                                   class="form-control{{ $errors->has('promocion_fecha_fin') ? ' is-invalid' : '' }}">
+                            {!! $errors->first('promocion_fecha_fin', '<div class="invalid-feedback">:message</div>') !!}
+                        </div>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="promocion_etiqueta" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Etiqueta promo (opcional)</label>
+                        {{ Form::text('promocion_etiqueta', old('promocion_etiqueta', $producto->promocion_etiqueta ?? ''), ['id' => 'promocion_etiqueta', 'class' => 'form-control' . ($errors->has('promocion_etiqueta') ? ' is-invalid' : ''), 'placeholder' => 'Oferta, Liquidacion, Promo']) }}
+                        {!! $errors->first('promocion_etiqueta', '<div class="invalid-feedback">:message</div>') !!}
+                        <p class="mt-1 text-xs text-slate-500">El precio promocional debe ser menor al precio de venta normal.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="linea_ropa_id" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Linea de ropa</label>
                 <select id="linea_ropa_id" name="linea_ropa_id" class="form-control @error('linea_ropa_id') is-invalid @enderror">

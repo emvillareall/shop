@@ -11,32 +11,10 @@
         </div>
     </section>
 
-    <section class="mb-8">
-        <div class="mb-3 flex items-end justify-between gap-2">
-            <h2 class="text-xl font-bold">Categorias</h2>
-            <p class="text-xs text-slate-500">{{ $categorias->count() }} activas</p>
-        </div>
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            @forelse($categorias as $categoria)
-                <a href="{{ route('ecommerce.categoria.show', $categoria->id) }}" class="rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold shadow-sm transition hover:border-brand-300 hover:shadow">
-                    {{ $categoria->nombre_categoria }}
-                </a>
-            @empty
-                <div class="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">No hay categorias activas.</div>
-            @endforelse
-        </div>
-    </section>
-
-    <section>
-        <div class="mb-3 flex items-end justify-between gap-2">
-            <h2 class="text-xl font-bold">Destacados</h2>
-            <a href="{{ route('ecommerce.productos.index') }}" class="text-sm font-semibold text-brand-700 hover:text-brand-800">Explorar todo</a>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            @foreach($destacados as $producto)
-                <x-ecommerce.product-card :producto="$producto" />
-            @endforeach
-        </div>
-    </section>
+    <livewire:ecommerce.catalogo-productos
+        mode="home"
+        :linea-id="isset($lineaSeleccionada) ? $lineaSeleccionada : null"
+        :categoria-id="isset($categoriaSeleccionada) ? $categoriaSeleccionada : null"
+        :search-term="isset($searchTerm) ? $searchTerm : ''"
+    />
 @endsection
-

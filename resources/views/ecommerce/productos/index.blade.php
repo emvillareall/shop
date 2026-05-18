@@ -12,7 +12,8 @@
     </section>
 
     <livewire:ecommerce.catalogo-productos
-        :categoria-id="isset($categoria) ? $categoria->id : null"
+        :categoria-id="isset($categoria) ? $categoria->id : (isset($categoriaId) ? $categoriaId : null)"
         :linea-id="isset($lineaId) ? $lineaId : null"
+        :search-term="isset($searchTerm) ? $searchTerm : ''"
     />
 @endsection

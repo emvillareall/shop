@@ -108,6 +108,11 @@ class ProductoController extends Controller
             'precio_pesos_producto' => 'required',
             'precio_dolares_producto' => 'nullable',
             'precio_venta_producto' => 'nullable',
+            'promocion_activa' => 'nullable|boolean',
+            'precio_promocional' => 'nullable|numeric|min:0',
+            'promocion_fecha_inicio' => 'nullable|date',
+            'promocion_fecha_fin' => 'nullable|date|after_or_equal:promocion_fecha_inicio',
+            'promocion_etiqueta' => 'nullable|string|max:60',
             'compras_id' => 'required',
             'categoria_producto_id' => 'required',
             'estado_producto' => 'nullable',
@@ -117,6 +122,20 @@ class ProductoController extends Controller
             'imagen_color_row' => 'nullable|array',
             'imagen_color_row.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
+
+        $precioNormal = (float) ($validated['precio_venta_producto'] ?? 0);
+        $promoActiva = (bool) ($request->boolean('promocion_activa'));
+        $precioPromo = isset($validated['precio_promocional']) ? (float) $validated['precio_promocional'] : null;
+        if ($promoActiva) {
+            if ($precioPromo === null || $precioPromo <= 0) {
+                return back()->withErrors(['precio_promocional' => 'El precio promocional es obligatorio cuando la promocion esta activa.'])->withInput();
+            }
+            if ($precioNormal > 0 && $precioPromo >= $precioNormal) {
+                return back()->withErrors(['precio_promocional' => 'El precio promocional debe ser menor al precio de venta.'])->withInput();
+            }
+        }
+
+        $validated['promocion_activa'] = $promoActiva ? 1 : 0;
 
         $producto = Producto::create(collect($validated)->except(['imagen', 'imagenes', 'imagen_color_row'])->all());
 
@@ -275,6 +294,11 @@ class ProductoController extends Controller
             'precio_pesos_producto' => 'required',
             'precio_dolares_producto' => 'nullable',
             'precio_venta_producto' => 'nullable',
+            'promocion_activa' => 'nullable|boolean',
+            'precio_promocional' => 'nullable|numeric|min:0',
+            'promocion_fecha_inicio' => 'nullable|date',
+            'promocion_fecha_fin' => 'nullable|date|after_or_equal:promocion_fecha_inicio',
+            'promocion_etiqueta' => 'nullable|string|max:60',
             'compras_id' => 'required',
             'categoria_producto_id' => 'required',
             'estado_producto' => 'nullable',
@@ -300,6 +324,20 @@ class ProductoController extends Controller
             'stock_por_color' => 'array',
             'stock_por_color.*' => 'nullable|integer|min:0',
         ]);
+
+        $precioNormal = (float) ($validated['precio_venta_producto'] ?? 0);
+        $promoActiva = (bool) ($request->boolean('promocion_activa'));
+        $precioPromo = isset($validated['precio_promocional']) ? (float) $validated['precio_promocional'] : null;
+        if ($promoActiva) {
+            if ($precioPromo === null || $precioPromo <= 0) {
+                return back()->withErrors(['precio_promocional' => 'El precio promocional es obligatorio cuando la promocion esta activa.'])->withInput();
+            }
+            if ($precioNormal > 0 && $precioPromo >= $precioNormal) {
+                return back()->withErrors(['precio_promocional' => 'El precio promocional debe ser menor al precio de venta.'])->withInput();
+            }
+        }
+
+        $validated['promocion_activa'] = $promoActiva ? 1 : 0;
 
         $data = collect($validated)->except([
             'imagen',

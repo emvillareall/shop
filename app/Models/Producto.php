@@ -18,6 +18,11 @@ use Illuminate\Support\Str;
  * @property $precio_pesos_producto
  * @property $precio_dolares_producto
  * @property $precio_venta_producto
+ * @property $precio_promocional
+ * @property $promocion_activa
+ * @property $promocion_fecha_inicio
+ * @property $promocion_fecha_fin
+ * @property $promocion_etiqueta
  * @property $estado_producto
  * @property $compras_id
  * @property $created_at
@@ -29,6 +34,8 @@ use Illuminate\Support\Str;
 class Producto extends Model
 {
     private const IMAGE_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 700'><rect width='900' height='700' fill='%23f1f5f9'/><rect x='80' y='80' width='740' height='540' rx='24' fill='%23e2e8f0'/><circle cx='300' cy='310' r='70' fill='%23cbd5e1'/><path d='M190 520l145-165 105 95 105-125 165 195H190z' fill='%2394a3b8'/><text x='450' y='610' text-anchor='middle' font-family='Arial,sans-serif' font-size='34' fill='%2364758b'>Sin imagen disponible</text></svg>";
+    private static array $mediaExistsCache = [];
+    private static ?array $globalBasenameIndex = null;
     
     static $rules = [
 		'codigo_producto' => 'required',
@@ -51,7 +58,71 @@ class Producto extends Model
      *
      * @var array
      */
-    protected $fillable = ['codigo_producto','descripcion_producto','cantidad_compra_producto','stock_venta_producto','precio_pesos_producto','precio_dolares_producto','precio_venta_producto','estado_producto','imagen_producto','compras_id','categoria_producto_id'];
+    protected $fillable = ['codigo_producto','descripcion_producto','cantidad_compra_producto','stock_venta_producto','precio_pesos_producto','precio_dolares_producto','precio_venta_producto','precio_promocional','promocion_activa','promocion_fecha_inicio','promocion_fecha_fin','promocion_etiqueta','estado_producto','imagen_producto','compras_id','categoria_producto_id'];
+
+    protected $casts = [
+        'precio_venta_producto' => 'decimal:2',
+        'precio_promocional' => 'decimal:2',
+        'promocion_activa' => 'boolean',
+        'promocion_fecha_inicio' => 'datetime',
+        'promocion_fecha_fin' => 'datetime',
+    ];
+
+public function precioNormal(): float
+{
+    return round((float) ($this->precio_venta_producto ?? 0), 2);
+}
+
+public function tienePromocionActiva(?\DateTimeInterface $ahora = null): bool
+{
+    if (!(bool) $this->promocion_activa) {
+        return false;
+    }
+
+    $precioNormal = $this->precioNormal();
+    $precioPromo = round((float) ($this->precio_promocional ?? 0), 2);
+    if ($precioPromo <= 0 || $precioPromo >= $precioNormal) {
+        return false;
+    }
+
+    $ahora = $ahora ? \Carbon\Carbon::instance($ahora) : now();
+    if ($this->promocion_fecha_inicio && $ahora->lt($this->promocion_fecha_inicio)) {
+        return false;
+    }
+    if ($this->promocion_fecha_fin && $ahora->gt($this->promocion_fecha_fin)) {
+        return false;
+    }
+
+    return true;
+}
+
+public function precioFinal(): float
+{
+    if ($this->tienePromocionActiva()) {
+        return round((float) $this->precio_promocional, 2);
+    }
+
+    return $this->precioNormal();
+}
+
+public function precioAnterior(): ?float
+{
+    return $this->tienePromocionActiva() ? $this->precioNormal() : null;
+}
+
+public function porcentajeDescuento(): float
+{
+    if (!$this->tienePromocionActiva()) {
+        return 0.0;
+    }
+
+    $normal = $this->precioNormal();
+    if ($normal <= 0) {
+        return 0.0;
+    }
+
+    return round((($normal - $this->precioFinal()) / $normal) * 100, 2);
+}
 
 public function coloresStock()
 {
@@ -277,11 +348,14 @@ private function mediaExists(string $path): bool
         return false;
     }
 
-    if (Storage::disk('public')->exists($path)) {
-        return true;
+    if (array_key_exists($path, self::$mediaExistsCache)) {
+        return self::$mediaExistsCache[$path];
     }
 
-    return File::exists(public_path($path));
+    $exists = Storage::disk('public')->exists($path) || File::exists(public_path($path));
+    self::$mediaExistsCache[$path] = $exists;
+
+    return $exists;
 }
 
 private function toMediaUrl(string $path): string
@@ -318,34 +392,15 @@ private function findGlobalPathByBasename(string $basename): ?string
         return null;
     }
 
-    $candidates = [];
-    $patterns = [
-        storage_path('app/public/productos/**/*'),
-        storage_path('app/public/**/*'),
-        public_path('imagenes/**/*'),
-        public_path('imagenes/Landingpage/**/*'),
-        public_path('storage/productos/**/*'),
-    ];
-
-    foreach ($patterns as $pattern) {
-        $matches = glob($pattern, GLOB_BRACE) ?: [];
-        foreach ($matches as $match) {
-            if (!File::isFile($match)) {
-                continue;
-            }
-            $name = pathinfo($match, PATHINFO_FILENAME);
-            if (strcasecmp($name, $basename) !== 0) {
-                continue;
-            }
-            $candidates[] = str_replace('\\', '/', $match);
-        }
+    if (self::$globalBasenameIndex === null) {
+        self::$globalBasenameIndex = $this->buildGlobalBasenameIndex();
     }
 
-    if (empty($candidates)) {
+    $key = Str::lower($basename);
+    $first = self::$globalBasenameIndex[$key] ?? null;
+    if (!$first) {
         return null;
     }
-
-    $first = $candidates[0];
 
     $storagePublic = str_replace('\\', '/', storage_path('app/public/'));
     $publicBase = str_replace('\\', '/', public_path() . DIRECTORY_SEPARATOR);
@@ -359,6 +414,44 @@ private function findGlobalPathByBasename(string $basename): ?string
     }
 
     return null;
+}
+
+private function buildGlobalBasenameIndex(): array
+{
+    $index = [];
+    $patterns = [
+        storage_path('app/public/productos/*'),
+        storage_path('app/public/*'),
+        public_path('imagenes/*'),
+        public_path('imagenes/Landingpage/*'),
+        public_path('storage/productos/*'),
+    ];
+
+    foreach ($patterns as $pattern) {
+        $matches = glob($pattern) ?: [];
+        foreach ($matches as $match) {
+            if (is_dir($match)) {
+                $inner = glob(str_replace('\\', '/', $match) . '/*') ?: [];
+                foreach ($inner as $file) {
+                    if (!File::isFile($file)) {
+                        continue;
+                    }
+                    $nameKey = Str::lower(pathinfo($file, PATHINFO_FILENAME));
+                    $index[$nameKey] ??= str_replace('\\', '/', $file);
+                }
+                continue;
+            }
+
+            if (!File::isFile($match)) {
+                continue;
+            }
+
+            $nameKey = Str::lower(pathinfo($match, PATHINFO_FILENAME));
+            $index[$nameKey] ??= str_replace('\\', '/', $match);
+        }
+    }
+
+    return $index;
 }
 
 public function stockTotalVariante(): int

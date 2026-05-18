@@ -76,7 +76,9 @@ class EcommerceController extends Controller
             'color_id' => $color->id,
             'talla' => $validated['talla'],
             'cantidad' => (int) $validated['cantidad'],
-            'precio' => (float) $producto->precio_venta_producto,
+            'precio' => (float) $producto->precioFinal(),
+            'precio_normal' => (float) $producto->precioNormal(),
+            'precio_promocional_aplicado' => $producto->tienePromocionActiva() ? (float) $producto->precioFinal() : null,
         ];
 
         session()->put('carrito', $carrito);
@@ -85,36 +87,38 @@ class EcommerceController extends Controller
         return back()->with('success', 'Producto agregado al carrito.');
     }
 
-    public function home(): View
+    public function home(Request $request): View
     {
-        $destacados = Producto::query()
-            ->where('estado_producto', 1)
-            ->withSum('coloresStock as stock_total_variante', 'stock_por_color')
-            ->withCount([
-                'coloresStock as variantes_con_stock' => fn ($q) => $q->where('stock_por_color', '>', 0),
-            ])
-            ->latest('id')
-            ->take(8)
-            ->get();
+        $validated = $request->validate([
+            'linea' => ['nullable', 'integer', Rule::exists('lineas_ropa', 'id')],
+            'q' => ['nullable', 'string', 'max:120'],
+            'categoria' => ['nullable', 'integer', Rule::exists('categorias_productos', 'id')],
+        ]);
 
-        $categorias = CategoriasProducto::query()
-            ->where('estado_categoria', 1)
-            ->latest('id')
-            ->take(8)
-            ->get();
+        $lineaSeleccionada = isset($validated['linea']) ? (int) $validated['linea'] : null;
+        $searchTerm = trim((string) ($validated['q'] ?? ''));
+        $categoriaSeleccionada = isset($validated['categoria']) ? (int) $validated['categoria'] : null;
 
-        return view('ecommerce.home', compact('destacados', 'categorias'));
+        return view('ecommerce.home', compact(
+            'lineaSeleccionada',
+            'searchTerm',
+            'categoriaSeleccionada',
+        ));
     }
 
     public function catalogo(Request $request): View
     {
         $validated = $request->validate([
             'linea' => ['nullable', 'integer', Rule::exists('lineas_ropa', 'id')],
+            'categoria' => ['nullable', 'integer', Rule::exists('categorias_productos', 'id')],
+            'q' => ['nullable', 'string', 'max:120'],
         ]);
 
         $lineaId = isset($validated['linea']) ? (int) $validated['linea'] : null;
+        $categoriaId = isset($validated['categoria']) ? (int) $validated['categoria'] : null;
+        $searchTerm = trim((string) ($validated['q'] ?? ''));
 
-        return view('ecommerce.productos.index', compact('lineaId'));
+        return view('ecommerce.productos.index', compact('lineaId', 'categoriaId', 'searchTerm'));
     }
 
     public function categoria(CategoriasProducto $categoria): View
