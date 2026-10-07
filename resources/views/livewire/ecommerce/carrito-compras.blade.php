@@ -1,4 +1,10 @@
 <div class="space-y-4" wire:poll.1s="tickReserva">
+    @if($errors->has('carrito'))
+        <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {{ $errors->first('carrito') }}
+        </div>
+    @endif
+
     @if(count($items))
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">

@@ -1,0 +1,47 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_americana_sport_bra_contrastline_20260904
+
+INTERPRETACION
+Producto | Color | Talla interpretada | Cantidad | Costo | Precio venta
+SPORT BRA CONTRASTLINE PROMO | verde quemado | XS-S | 1 | USD 7.00 | USD 20.00
+SPORT BRA CONTRASTLINE PROMO | verde quemado | M | 1 | USD 7.00 | USD 20.00
+
+NORMALIZACIONES
+- XS-S se conservó como talla compuesta con 1 pieza.
+- No se detectaron ambigüedades.
+
+PRECIOS
+- Costo unitario: USD 7.00.
+- Precio unitario de venta: USD 20.00.
+- Etiqueta conservada: PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 2.
+- Piezas: 2.
+- Costo total: USD 14.00.
+- Venta estimada: USD 40.00.
+- Utilidad bruta: USD 26.00.
+- Tallas compuestas detectadas: 1.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_americana_sport_bra_contrastline_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_americana_sport_bra_contrastline_bootyfitness.sql
+- Resumen: exports/resumen_linea_americana_sport_bra_contrastline_bootyfitness.txt
+
+NOTA DE ESTRUCTURA
+- La línea existente equivalente a Línea Americana se llama americana y fue reutilizada.
+- La categoría TOP existente asociada a americana fue reutilizada.
+- La base real no contiene una tabla stock_inicial; el stock inicial se carga en colores_productos.stock_por_color y mediante inventario_movimientos.
+
+RESULTADO DE EJECUCION
+- Insertado correctamente: Sí.
+- Producto: SPORT BRA CONTRASTLINE PROMO (ID 29).
+- Compra inicial: carga_la_sport_bra_contrastline_20260904 (ID 29).
+- Variantes: 2.
+- Piezas: 2.
+- Costo total: USD 14.00.
+- Venta estimada: USD 40.00.
+- Utilidad bruta: USD 26.00.
+- Tallas compuestas: 1.
+- Validador: OK.

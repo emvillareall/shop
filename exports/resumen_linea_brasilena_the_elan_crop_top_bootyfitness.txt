@@ -1,0 +1,39 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_the_elan_crop_top_20260904
+
+INTERPRETACION
+- Producto: THE ELAN CROP TOP PROMO
+- Linea: linea_brasilena
+- Categoria: TOP
+- Negro / S-M: 2 piezas
+- Blanco / S-M: 1 pieza
+- Rosa / S-M: 1 pieza
+- Tallas compuestas detectadas: S-M.
+- No se detectaron ambiguedades.
+
+PRECIOS
+- Costo unitario: USD 10.00.
+- Precio unitario de venta: USD 20.00.
+- Etiqueta conservada: PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 3.
+- Piezas: 4.
+- Costo total: USD 40.00.
+- Venta estimada: USD 80.00.
+- Utilidad bruta: USD 40.00.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_the_elan_crop_top_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_the_elan_crop_top_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: THE ELAN CROP TOP PROMO (ID 17).
+- Variantes: 3.
+- Piezas: 4.
+- Costo total: USD 40.00.
+- Venta estimada: USD 80.00.
+- Utilidad bruta: USD 40.00.
+- Validador: OK.

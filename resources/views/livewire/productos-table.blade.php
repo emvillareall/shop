@@ -148,13 +148,19 @@
                         <td>{{ $producto->compras_id }}</td>
                         <td>
                             <div class="flex flex-wrap gap-1">
-                                <a class="btn btn-primary btn-sm" href="{{ route('productos.show', $producto->id) }}">Ver</a>
-                                <a class="btn btn-success btn-sm" href="{{ route('productos.edit', $producto->id) }}">Editar</a>
-                                <form action="{{ route('productos.destroy', $producto->id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar este producto?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-                                </form>
+                                @can('view', $producto)
+                                    <a class="btn btn-primary btn-sm" href="{{ route('productos.show', $producto->id) }}">Ver</a>
+                                @endcan
+                                @can('update', $producto)
+                                    <a class="btn btn-success btn-sm" href="{{ route('productos.edit', $producto->id) }}">Editar</a>
+                                @endcan
+                                @can('delete', $producto)
+                                    <form action="{{ route('productos.destroy', $producto->id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar este producto?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                    </form>
+                                @endcan
                             </div>
                         </td>
                     </tr>

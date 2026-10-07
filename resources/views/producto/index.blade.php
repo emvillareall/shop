@@ -8,7 +8,12 @@
     <div class="space-y-4">
         <div class="card">
             <div class="card-header">
-                <h1 class="text-base font-semibold">Listado de Productos</h1>
+                <div class="flex items-center justify-between gap-3">
+                    <h1 class="text-base font-semibold">Listado de Productos</h1>
+                    @can('create', \App\Models\Producto::class)
+                        <a href="{{ route('productos.create') }}" class="btn btn-primary btn-sm">Agregar producto</a>
+                    @endcan
+                </div>
             </div>
             <div class="card-body">
                 <style>
@@ -32,6 +37,16 @@
                         padding: 4px 12px !important;
                         font-size: 13px !important;
                         white-space: nowrap !important;
+                    }
+                    .product-code-column {
+                        width: 12rem;
+                        max-width: 12rem;
+                    }
+                    .product-code-text {
+                        display: block;
+                        max-width: 12rem;
+                        white-space: normal;
+                        overflow-wrap: anywhere;
                     }
                     @media (max-width: 1200px) {
                         .productos-filtros-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -98,13 +113,14 @@
                             <tr>
                                 <th>#</th>
                                 <th>Imagen</th>
-                                <th>Codigo</th>
+                                <th class="product-code-column">Codigo</th>
                                 <th>Descripcion</th>
                                 <th>Stock por color/talla</th>
                                 <th>Precio (P)</th>
                                 <th>Precio ($)</th>
                                 <th>Venta</th>
                                 <th>Compra ID</th>
+                                <th>Publicacion ecommerce</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -118,7 +134,9 @@
                                              class="h-14 w-14 rounded-md object-cover"
                                              loading="lazy">
                                     </td>
-                                    <td>{{ $producto->codigo_producto }}</td>
+                                    <td class="product-code-column">
+                                        <span class="product-code-text">{{ $producto->codigo_producto }}</span>
+                                    </td>
                                     <td>{{ $producto->descripcion_producto }}</td>
                                     <td>
                                         @if($producto->coloresStock->count())
@@ -144,20 +162,58 @@
                                     <td>${{ number_format($producto->precio_venta_producto, 2) }}</td>
                                     <td>{{ $producto->compras_id }}</td>
                                     <td>
+                                        @if($producto->publicado_ecommerce)
+                                            <span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+                                                PUBLICADO
+                                            </span>
+                                        @else
+                                            <span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+                                                NO PUBLICADO
+                                            </span>
+                                        @endif
+
+                                        @can('update', $producto)
+                                            @if($producto->publicado_ecommerce)
+                                                <form action="{{ route('productos.ocultar', $producto->id) }}"
+                                                      method="POST"
+                                                      class="mt-2"
+                                                      onsubmit="return confirm('Este producto dejara de mostrarse en la tienda online. El stock y la venta interna no se modificaran. ¿Deseas continuar?')">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="btn btn-warning btn-sm">Ocultar</button>
+                                                </form>
+                                            @else
+                                                <form action="{{ route('productos.publicar', $producto->id) }}"
+                                                      method="POST"
+                                                      class="mt-2">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="btn btn-success btn-sm">Publicar</button>
+                                                </form>
+                                            @endif
+                                        @endcan
+                                    </td>
+                                    <td>
                                         <div class="flex flex-wrap gap-1">
-                                            <a class="btn btn-primary btn-sm" href="{{ route('productos.show', $producto->id) }}">Ver</a>
-                                            <a class="btn btn-success btn-sm" href="{{ route('productos.edit', $producto->id) }}">Editar</a>
-                                            <form action="{{ route('productos.destroy', $producto->id) }}" method="POST" onsubmit="return confirm('Seguro que deseas eliminar este producto?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-                                            </form>
+                                            @can('view', $producto)
+                                                <a class="btn btn-primary btn-sm" href="{{ route('productos.show', $producto->id) }}">Ver</a>
+                                            @endcan
+                                            @can('update', $producto)
+                                                <a class="btn btn-success btn-sm" href="{{ route('productos.edit', $producto->id) }}">Editar</a>
+                                            @endcan
+                                            @can('delete', $producto)
+                                                <form action="{{ route('productos.destroy', $producto->id) }}" method="POST" onsubmit="return confirm('Seguro que deseas eliminar este producto?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                                </form>
+                                            @endcan
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="10" class="text-center text-slate-500">No hay productos para mostrar.</td>
+                                    <td colspan="11" class="text-center text-slate-500">No hay productos para mostrar.</td>
                                 </tr>
                             @endforelse
                         </tbody>

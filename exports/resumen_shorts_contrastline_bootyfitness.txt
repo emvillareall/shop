@@ -1,0 +1,42 @@
+RESUMEN DE CORRECCION DE PRODUCTO BOOTYFITNESS
+
+Producto: SHORTS CONTRASTLINE PROMO
+Codigo: shorts_contrastline_la_20260904
+
+AUDITORIA PREVIA
+- Variantes antes: 7.
+- Piezas antes: 21.
+- Costo total antes: USD 147.00.
+- Venta estimada antes: USD 504.00.
+- Utilidad bruta antes: USD 357.00.
+- Pedidos asociados: 0.
+- Movimientos de salida o venta: 0.
+
+CAMBIO APLICADO
+- Rosa / M-L: variante agregada con 1 pieza.
+- Se agregó el detalle de compra y el movimiento de entrada inicial correspondientes.
+- La variante Rosa / XS-S existente se conservó en 1 pieza.
+- No se modificaron ventas ni pedidos.
+
+RESULTADO FINAL
+- Variantes: 8.
+- Piezas: 22.
+- Costo total: USD 154.00.
+- Venta estimada: USD 528.00.
+- Utilidad bruta: USD 374.00.
+
+ARCHIVOS
+- SQL principal: exports/corregir_shorts_contrastline_bootyfitness.sql
+- Validador: exports/validar_shorts_contrastline_bootyfitness.sql
+- Resumen: exports/resumen_shorts_contrastline_bootyfitness.txt
+
+RESULTADO DE EJECUCION
+- Corregido correctamente: Sí.
+- Producto corregido: SHORTS CONTRASTLINE PROMO (ID 27).
+- Variante agregada: Rosa / M-L / 1 pieza.
+- Variantes finales: 8.
+- Piezas finales: 22.
+- Costo total final: USD 154.00.
+- Venta estimada final: USD 528.00.
+- Utilidad bruta final: USD 374.00.
+- Validador: OK.

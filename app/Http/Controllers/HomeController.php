@@ -11,6 +11,7 @@ use App\Models\Pago;
 use App\Models\PagoTransferencia;
 use App\Services\Ventas\AbonoService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use DB;
 
 class HomeController extends Controller
@@ -44,6 +45,7 @@ class HomeController extends Controller
             ->orderByRaw('COALESCE(colores.nombre_color, "") asc')
             ->orderBy('colores_productos.talla_por_color')
             ->select([
+                'colores_productos.id as variante_id',
                 'colores_productos.producto_id',
                 'colores_productos.colores_id',
                 'colores_productos.talla_por_color',
@@ -87,6 +89,36 @@ class HomeController extends Controller
             'referencia_pago_pos' => 'nullable|string|max:120|required_if:metodo_pago_pos,transferencia',
         ]);
 
+        $lineasRaw = json_decode((string) $validated['lineas_json'], true);
+        if (!is_array($lineasRaw) || empty($lineasRaw)) {
+            return back()->withErrors(['lineas_json' => 'Agrega al menos un producto a la factura.'])->withInput();
+        }
+
+        $lineasProcesables = [];
+        foreach ($lineasRaw as $linea) {
+            if (!is_array($linea)) {
+                continue;
+            }
+
+            $productoId = (int) ($linea['producto_id'] ?? 0);
+            $colorId = (int) ($linea['colores_id'] ?? 0);
+            $varianteId = (int) ($linea['variante_id'] ?? 0);
+            $talla = trim((string) ($linea['talla_por_color'] ?? ''));
+            $cantidad = (int) ($linea['cantidad'] ?? 0);
+
+            if ($productoId < 1 || $colorId < 1 || $varianteId < 1 || $talla === '' || $cantidad < 1) {
+                continue;
+            }
+
+            $lineasProcesables[] = $linea;
+        }
+
+        if ($lineasProcesables === []) {
+            throw ValidationException::withMessages([
+                'lineas_json' => 'No hay lineas de producto validas para facturar.',
+            ]);
+        }
+
         if ($validated['cliente_modo'] === 'existente' && empty($validated['clientes_id'])) {
             return back()->withErrors(['clientes_id' => 'Selecciona un cliente existente.'])->withInput();
         }
@@ -125,12 +157,7 @@ class HomeController extends Controller
             $clienteId = (int) $cliente->id;
         }
 
-        $lineasRaw = json_decode((string) $validated['lineas_json'], true);
-        if (!is_array($lineasRaw) || empty($lineasRaw)) {
-            return back()->withErrors(['lineas_json' => 'Agrega al menos un producto a la factura.'])->withInput();
-        }
-
-        DB::transaction(function () use ($validated, $lineasRaw, $clienteId) {
+        DB::transaction(function () use ($validated, $lineasProcesables, $clienteId) {
             $metodoPago = (string) $validated['metodo_pago_pos'];
             $modalidadVenta = (string) ($validated['modalidad_venta'] ?? 'contado');
             $esApartado = $modalidadVenta === 'apartado';
@@ -139,6 +166,105 @@ class HomeController extends Controller
                 : (in_array($metodoPago, ['paypal', 'payphone'], true) ? 'PENDIENTE' : 'APROBADO');
             $estadoPedido = $estadoPago === 'APROBADO' ? 'PAGADO' : 'PENDIENTE_PAGO';
             $estadoEnvio = $estadoPago === 'APROBADO' ? 'ENTREGADO' : 'SIN_ENVIO';
+
+            $variantesBloqueadas = [];
+            $productosBloqueados = [];
+            $cantidadesPorVariante = [];
+            $totalesPorProducto = [];
+            $lineasValidadas = [];
+
+            $varianteReferencias = DB::table('colores_productos')
+                ->whereIn('id', array_values(array_unique(array_map(
+                    static fn (array $linea): int => (int) $linea['variante_id'],
+                    $lineasProcesables
+                ))))
+                ->get()
+                ->keyBy('id');
+
+            // Derive the product order from persisted variant ownership, then
+            // lock products before variants to keep concurrent POS requests
+            // from acquiring shared rows in opposite orders.
+            usort(
+                $lineasProcesables,
+                static function (array $left, array $right) use ($varianteReferencias): int {
+                    $leftReference = $varianteReferencias->get((int) $left['variante_id']);
+                    $rightReference = $varianteReferencias->get((int) $right['variante_id']);
+                    $leftProductId = (int) ($leftReference->producto_id ?? PHP_INT_MAX);
+                    $rightProductId = (int) ($rightReference->producto_id ?? PHP_INT_MAX);
+
+                    return [$leftProductId, (int) $left['variante_id']]
+                        <=> [$rightProductId, (int) $right['variante_id']];
+                }
+            );
+
+            foreach ($lineasProcesables as $linea) {
+                $productoIdSolicitado = (int) $linea['producto_id'];
+                $varianteId = (int) $linea['variante_id'];
+                $colorIdSolicitado = (int) $linea['colores_id'];
+                $tallaSolicitada = trim((string) $linea['talla_por_color']);
+                $cantidad = (int) $linea['cantidad'];
+
+                $varianteReferencia = $varianteReferencias->get($varianteId);
+                $productoIdReferenciado = (int) ($varianteReferencia->producto_id ?? 0);
+                if ($productoIdReferenciado < 1) {
+                    throw ValidationException::withMessages([
+                        'lineas_json' => 'La variante seleccionada no es válida para esta venta.',
+                    ]);
+                }
+
+                $producto = $productosBloqueados[$productoIdReferenciado] ??= Producto::query()
+                    ->lockForUpdate()
+                    ->findOrFail($productoIdReferenciado);
+
+                $variante = $variantesBloqueadas[$varianteId] ??= DB::table('colores_productos')
+                    ->where('id', $varianteId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$variante
+                    || (int) $variante->producto_id !== $productoIdReferenciado
+                    || (int) $variante->producto_id !== (int) $producto->id
+                    || (int) $variante->producto_id !== $productoIdSolicitado
+                    || (int) $variante->colores_id !== $colorIdSolicitado
+                    || (string) $variante->talla_por_color !== $tallaSolicitada) {
+                    throw ValidationException::withMessages([
+                        'lineas_json' => 'La variante seleccionada no es válida para esta venta.',
+                    ]);
+                }
+
+                $productoIdReal = (int) $variante->producto_id;
+
+                if ((int) $producto->estado_producto !== 1) {
+                    throw ValidationException::withMessages([
+                        'lineas_json' => 'El producto ya no está disponible para venta.',
+                    ]);
+                }
+
+                $cantidadesPorVariante[$varianteId] = ($cantidadesPorVariante[$varianteId] ?? 0) + $cantidad;
+                $totalesPorProducto[$productoIdReal] = ($totalesPorProducto[$productoIdReal] ?? 0) + $cantidad;
+                $lineasValidadas[] = [
+                    'linea' => $linea,
+                    'producto' => $producto,
+                    'producto_id' => $productoIdReal,
+                    'variante_id' => $varianteId,
+                    'cantidad' => $cantidad,
+                ];
+            }
+
+            foreach ($cantidadesPorVariante as $varianteId => $cantidadTotal) {
+                $variante = $variantesBloqueadas[$varianteId];
+                if ((int) $variante->stock_por_color < $cantidadTotal) {
+                    $producto = $productosBloqueados[(int) $variante->producto_id];
+                    throw new \RuntimeException("Stock insuficiente para {$producto->descripcion_producto} ({$variante->talla_por_color}).");
+                }
+            }
+
+            foreach ($totalesPorProducto as $productoId => $cantidadTotal) {
+                $producto = $productosBloqueados[$productoId];
+                if ((int) $producto->stock_venta_producto < $cantidadTotal) {
+                    throw new \RuntimeException("Stock total insuficiente para {$producto->descripcion_producto}.");
+                }
+            }
 
             $pedido = Pedido::query()->create([
                 'codigo_pedido' => 'BF-POS-' . now()->format('YmdHis'),
@@ -160,48 +286,30 @@ class HomeController extends Controller
 
             $subtotal = 0.0;
             $lineasProcesadas = 0;
-            $totalesPorProducto = [];
 
-            foreach ($lineasRaw as $linea) {
-                $productoId = (int) ($linea['producto_id'] ?? 0);
-                $colorId = (int) ($linea['colores_id'] ?? 0);
-                $talla = trim((string) ($linea['talla_por_color'] ?? ''));
-                $cantidad = (int) ($linea['cantidad'] ?? 0);
-                if ($productoId < 1 || $colorId < 1 || $talla === '' || $cantidad < 1) {
-                    continue;
-                }
-
-                $producto = Producto::query()->lockForUpdate()->findOrFail($productoId);
-                $variante = DB::table('colores_productos')
-                    ->where('producto_id', $productoId)
-                    ->where('colores_id', $colorId)
-                    ->where('talla_por_color', $talla)
-                    ->lockForUpdate()
-                    ->first();
-                if (!$variante) {
-                    throw new \RuntimeException("Variante no encontrada para {$producto->descripcion_producto}.");
-                }
-                if ((int) $variante->stock_por_color < $cantidad) {
-                    throw new \RuntimeException("Stock insuficiente para {$producto->descripcion_producto} ({$talla}).");
-                }
+            foreach ($lineasValidadas as $lineaValidada) {
+                $linea = $lineaValidada['linea'];
+                $producto = $lineaValidada['producto'];
+                $productoId = $lineaValidada['producto_id'];
+                $varianteId = $lineaValidada['variante_id'];
+                $cantidad = $lineaValidada['cantidad'];
+                $talla = trim((string) $linea['talla_por_color']);
+                $variante = $variantesBloqueadas[$varianteId];
 
                 DB::table('colores_productos')
-                    ->where('producto_id', $productoId)
-                    ->where('colores_id', $colorId)
-                    ->where('talla_por_color', $talla)
+                    ->where('id', $varianteId)
                     ->update(['stock_por_color' => (int) $variante->stock_por_color - $cantidad]);
 
                 $precio = (float) ($producto->precio_venta_producto ?? 0);
                 $subtotalLinea = $precio * $cantidad;
                 $subtotal += $subtotalLinea;
                 $lineasProcesadas++;
-                $totalesPorProducto[$productoId] = ($totalesPorProducto[$productoId] ?? 0) + $cantidad;
 
                 DetallePedido::query()->create([
                     'cantidad_producto' => $cantidad,
                     'producto_id' => $productoId,
                     'pedido_id' => $pedido->id,
-                    'id_color_producto' => $colorId,
+                    'id_color_producto' => (int) $variante->colores_id,
                     'talla_por_color' => $talla,
                     'nombre_producto_snapshot' => $linea['producto_nombre'] ?? $producto->descripcion_producto,
                     'color_snapshot' => $linea['nombre_color'] ?? null,
@@ -215,10 +323,7 @@ class HomeController extends Controller
             }
 
             foreach ($totalesPorProducto as $productoId => $cantidadTotal) {
-                $productoActual = Producto::query()->lockForUpdate()->findOrFail($productoId);
-                if ((int) $productoActual->stock_venta_producto < $cantidadTotal) {
-                    throw new \RuntimeException("Stock total insuficiente para {$productoActual->descripcion_producto}.");
-                }
+                $productoActual = $productosBloqueados[$productoId];
                 $productoActual->update([
                     'stock_venta_producto' => (int) $productoActual->stock_venta_producto - $cantidadTotal,
                 ]);

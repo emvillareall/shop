@@ -90,12 +90,19 @@ class ProductoController extends Controller
 
     public function create(Request $request)
     {
-        $compras_id = $request->id;
+        $compras_id = $request->filled('id') ? $request->integer('id') : null;
         $producto = new Producto();
         $lineasRopa = LineasRopa::all();
         $categorias = CategoriasProducto::all();
+        $compras = Compra::query()
+            ->orderByDesc('id')
+            ->get(['id', 'codigo_compra', 'descripcion_compra']);
 
-        return view('producto.create', compact('producto', 'compras_id', 'lineasRopa', 'categorias'));
+        if ($compras_id !== null && ! $compras->contains('id', $compras_id)) {
+            abort(404);
+        }
+
+        return view('producto.create', compact('producto', 'compras_id', 'lineasRopa', 'categorias', 'compras'));
     }
 
     public function store(Request $request)
@@ -113,7 +120,7 @@ class ProductoController extends Controller
             'promocion_fecha_inicio' => 'nullable|date',
             'promocion_fecha_fin' => 'nullable|date|after_or_equal:promocion_fecha_inicio',
             'promocion_etiqueta' => 'nullable|string|max:60',
-            'compras_id' => 'required',
+            'compras_id' => 'required|integer|exists:compras,id',
             'categoria_producto_id' => 'required',
             'estado_producto' => 'nullable',
             'imagen_producto' => 'nullable',
@@ -137,7 +144,17 @@ class ProductoController extends Controller
 
         $validated['promocion_activa'] = $promoActiva ? 1 : 0;
 
-        $producto = Producto::create(collect($validated)->except(['imagen', 'imagenes', 'imagen_color_row'])->all());
+        $compra = Compra::query()->findOrFail((int) $validated['compras_id']);
+        $esCompraEnTransito = (string) $compra->estado_recepcion === 'EN_TRANSITO';
+        if ($esCompraEnTransito) {
+            // La compra registra mercaderia pedida, no stock fisico recibido.
+            $validated['stock_venta_producto'] = 0;
+        }
+
+        $producto = new Producto();
+        $producto->fill(collect($validated)->except(['imagen', 'imagenes', 'imagen_color_row'])->all());
+        $producto->publicado_ecommerce = false;
+        $producto->save();
 
         if ($request->hasFile('imagen')) {
             $stored = $this->storeProductoImage($request->file('imagen'), (int) $producto->id);
@@ -180,7 +197,6 @@ class ProductoController extends Controller
             $precioRealDolares = (float) $request->precio_dolares_producto;
         }
 
-        $compra = Compra::find($request->compras_id);
         $subtotalProductoPesos = $precioRealPesos * (float) $request->cantidad_compra_producto;
         $subtotalProductoDolares = $precioRealDolares * (float) $request->cantidad_compra_producto;
 
@@ -210,19 +226,20 @@ class ProductoController extends Controller
             $cantidades = $request->cantidad_por_color;
             $stocks = $request->stock_por_color;
 
-            DB::transaction(function () use ($productoInsertado, $colores, $tallas, $cantidades, $stocks, $request) {
+            DB::transaction(function () use ($productoInsertado, $colores, $tallas, $cantidades, $stocks, $request, $esCompraEnTransito) {
                 foreach ($colores as $i => $colorId) {
                     DB::table('colores_productos')->insert([
                         'producto_id' => $productoInsertado->id,
                         'colores_id' => $colorId,
                         'talla_por_color' => $tallas[$i] ?? '',
                         'cantidad_por_color' => (int) ($cantidades[$i] ?? 0),
-                        'stock_por_color' => (int) ($stocks[$i] ?? 0),
+                        // Una compra en transito no crea stock fisico; las compras legacy conservan su flujo.
+                        'stock_por_color' => $esCompraEnTransito ? 0 : (int) ($stocks[$i] ?? 0),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
 
-                    $stockInicial = (int) ($stocks[$i] ?? 0);
+                    $stockInicial = $esCompraEnTransito ? 0 : (int) ($stocks[$i] ?? 0);
                     $cantidadLinea = (int) ($cantidades[$i] ?? 0);
                     $ppu = (float) ($productoInsertado->precio_pesos_producto ?? 0);
                     $pdu = (float) ($productoInsertado->precio_dolares_producto ?? 0);
@@ -242,7 +259,7 @@ class ProductoController extends Controller
                         'observacion' => 'Linea registrada desde alta de producto en compra',
                     ]);
 
-                    if ($stockInicial > 0) {
+                    if (!$esCompraEnTransito && $stockInicial > 0) {
                         $this->inventarioService->registrarEntradaVariante(
                             (int) $productoInsertado->id,
                             (int) $colorId,
@@ -265,18 +282,22 @@ class ProductoController extends Controller
 
         $this->syncLegacyMainImageRecord($producto);
 
-        return redirect()->route('compras.index');
+        $destination = $request->user()->can('administracion-completa')
+            ? 'compras.index'
+            : 'productos.index';
+
+        return redirect()->route($destination);
     }
 
-    public function show($id)
+    public function show(Producto $producto)
     {
-        $producto = Producto::with(['imagenes', 'coloresStock.color'])->findOrFail($id);
+        $producto->load(['imagenes', 'coloresStock.color']);
         return view('producto.show', compact('producto'));
     }
 
-    public function edit($id)
+    public function edit(Producto $producto)
     {
-        $producto = Producto::with(['coloresStock.color', 'imagenes'])->findOrFail($id);
+        $producto->load(['coloresStock.color', 'imagenes']);
         $compras_id = $producto->compras_id;
         $lineasRopa = LineasRopa::all();
         $categorias = CategoriasProducto::all();
@@ -479,9 +500,9 @@ class ProductoController extends Controller
         return redirect()->route('productos.index')->with('success', 'Producto actualizado correctamente.');
     }
 
-    public function destroy($id)
+    public function destroy(Producto $producto)
     {
-        Producto::find($id)?->delete();
+        $producto->delete();
         return redirect()->route('productos.index')->with('success', 'Producto eliminado correctamente');
     }
 

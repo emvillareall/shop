@@ -75,10 +75,10 @@
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-danger btn-sm"><i class="fa fa-fw fa-trash"></i></button>
                                                 </form>
-                                                @if(($compra->estado_compra ?? '1') !== 'ANULADA')
+                                                @if($compra->puedeAnularse())
                                                     <form action="{{ route('compras.anular', $compra->id) }}" method="POST" class="mt-1">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Esto revertirá entradas de inventario de la compra. ¿Continuar?')">
+                                                        <button type="submit" class="btn btn-secondary btn-sm" data-testid="anular-compra-{{ $compra->id }}" onclick="return confirm('Esta compra está en tránsito y se anulará administrativamente. ¿Continuar?')">
                                                             Anular compra
                                                         </button>
                                                     </form>

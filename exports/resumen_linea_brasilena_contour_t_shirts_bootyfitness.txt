@@ -1,0 +1,44 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_contour_t_shirts_20260904
+
+INTERPRETACION
+- Producto: CONTOUR T SHIRTS PROMO
+- Linea: linea_brasilena
+- Categoria: T SHIRTS
+- Negro / XS-S: 6 piezas
+- Negro / M: 5 piezas
+- Rosa / XS-S: 4 piezas
+- Azul marino / S-M: 1 pieza
+- Verde / S-M: 1 pieza
+- Gris / XS-S: 1 pieza
+- Azul / XS-S: 1 pieza
+- Chedron / S-M: 1 pieza
+- Tallas compuestas detectadas: XS-S y S-M.
+- No se detectaron ambiguedades.
+
+PRECIOS
+- Costo unitario: USD 10.00.
+- Precio unitario de venta: USD 20.00.
+- Etiqueta conservada: PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 8.
+- Piezas: 20.
+- Costo total: USD 200.00.
+- Venta estimada: USD 400.00.
+- Utilidad bruta: USD 200.00.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_contour_t_shirts_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_contour_t_shirts_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: CONTOUR T SHIRTS PROMO (ID 21).
+- Variantes: 8.
+- Piezas: 20.
+- Costo total: USD 200.00.
+- Venta estimada: USD 400.00.
+- Utilidad bruta: USD 200.00.
+- Validador: OK.

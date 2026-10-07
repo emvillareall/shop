@@ -41,5 +41,19 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'acceso_administrativo_completo' => 'boolean',
+        'puede_ver_productos' => 'boolean',
+        'puede_crear_productos' => 'boolean',
+        'puede_editar_productos' => 'boolean',
     ];
+
+    public function estaActivo(): bool
+    {
+        return (string) $this->estado_user === '1';
+    }
+
+    public function tieneAccesoAdministrativoCompleto(): bool
+    {
+        return $this->estaActivo() && $this->acceso_administrativo_completo;
+    }
 }

@@ -1,0 +1,40 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_dry_jackets_contour_20260904
+
+INTERPRETACION
+- Producto: DRY JACKETS CONTOUR PROMO
+- Linea: linea_brasilena
+- Categoria: CHAQUETAS
+- Cereza / XS-S: 2 piezas
+- Cereza / M: 2 piezas
+- Rosa / S-M: 1 pieza
+- Rosa / M-L: 1 pieza
+- Tallas compuestas detectadas: XS-S, S-M y M-L.
+- Observacion: el color cereza no existia exactamente; se creo como color independiente con codigo #C41E3A. El color rosa fue reutilizado.
+
+PRECIOS
+- Costo unitario: USD 14.00.
+- Precio unitario de venta: USD 33.00.
+- Etiqueta conservada: PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 4.
+- Piezas: 6.
+- Costo total: USD 84.00.
+- Venta estimada: USD 198.00.
+- Utilidad bruta: USD 114.00.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_dry_jackets_contour_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_dry_jackets_contour_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: DRY JACKETS CONTOUR PROMO (ID 15).
+- Variantes: 4.
+- Piezas: 6.
+- Costo total: USD 84.00.
+- Venta estimada: USD 198.00.
+- Utilidad bruta: USD 114.00.
+- Validador: OK.

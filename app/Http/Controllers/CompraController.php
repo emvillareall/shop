@@ -7,6 +7,8 @@ use App\Models\CompraItem;
 use App\Models\InventarioMovimiento;
 use App\Models\Proveedore;
 use App\Services\Auditoria\AuditService;
+use App\Services\Compras\CompraRecepcionService;
+use App\Services\Compras\ProveedorReclamoService;
 use App\Services\Inventario\InventarioService;
 use Illuminate\Http\Request;
 use DB;
@@ -19,7 +21,8 @@ class CompraController extends Controller
 {
     public function __construct(
         private readonly InventarioService $inventarioService,
-        private readonly AuditService $auditService
+        private readonly AuditService $auditService,
+        private readonly CompraRecepcionService $recepcionService
     ) {}
     /**
      * Display a listing of the resource.
@@ -28,7 +31,7 @@ class CompraController extends Controller
      */
     public function index()
     {
-        $compras = Compra::paginate();
+        $compras = Compra::withCount('recepciones')->paginate();
         
 
         return view('compra.index', compact('compras'))
@@ -66,6 +69,8 @@ class CompraController extends Controller
             'proveedor_id' => 'required|exists:proveedores,id',
         ]);
 
+        $validated['estado_recepcion'] = 'EN_TRANSITO';
+
         $compra = Compra::create($validated);
 
         return redirect()->route('compras.index')
@@ -80,6 +85,11 @@ class CompraController extends Controller
      */
     public function show($id)
     {
+        $compra = Compra::query()
+            ->with('proveedor')
+            ->findOrFail($id);
+        $resumenRecepcion = $this->recepcionService->resumenRecepcion($compra);
+        $gestionProveedor = app(ProveedorReclamoService::class)->resumenParaCompra($compra);
 
         $productos = DB::table('productos')
             ->where('compras_id',$id)
@@ -111,7 +121,26 @@ class CompraController extends Controller
                 'colores.nombre_color'
             )
             ->orderBy('compra_items.id')
-            ->get();
+            ->get()
+            ->map(function ($item) use ($resumenRecepcion) {
+                $resumen = $resumenRecepcion[(int) $item->id] ?? [
+                    'recibida' => 0,
+                    'aceptada' => 0,
+                    'danada' => 0,
+                    'incorrecta' => 0,
+                    'faltante' => 0,
+                    'pendiente' => (int) $item->cantidad,
+                ];
+
+                $item->fisicamente_contabilizada = (int) $resumen['recibida'];
+                $item->aceptada_acumulada = (int) $resumen['aceptada'];
+                $item->danada_acumulada = (int) $resumen['danada'];
+                $item->incorrecta_acumulada = (int) $resumen['incorrecta'];
+                $item->faltante_acumulado = (int) $resumen['faltante'];
+                $item->pendiente_recepcion = (int) $resumen['pendiente'];
+
+                return $item;
+            });
 
         $trazabilidad = CompraItem::query()
             ->leftJoin('colores_productos', function ($join) {
@@ -151,7 +180,25 @@ class CompraController extends Controller
                 return $row;
             });
 
-        return view('compra.show', compact('productos', 'variantes', 'compraItems', 'trazabilidad', 'id'));
+        $recepciones = $compra->recepciones()
+            ->with(['user', 'items.compraItem.producto', 'items.compraItem.color'])
+            ->orderByDesc('fecha_recepcion')
+            ->orderByDesc('id')
+            ->get();
+        $recepcionHabilitada = $this->recepcionService->puedeRecibir($compra);
+
+        return view('compra.show', compact(
+            'compra',
+            'productos',
+            'variantes',
+            'compraItems',
+            'trazabilidad',
+            'recepciones',
+            'recepcionHabilitada',
+            'resumenRecepcion',
+            'gestionProveedor',
+            'id'
+        ));
     }
 
     public function ajustarInventario(Request $request, Compra $compra)
@@ -290,28 +337,47 @@ class CompraController extends Controller
 
     public function anular(Compra $compra)
     {
-        $before = $compra->toArray();
+        $resultado = DB::transaction(function () use ($compra): array {
+            $compraBloqueada = Compra::query()
+                ->whereKey($compra->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        DB::transaction(function () use ($compra) {
-            if ((string) $compra->estado_compra === 'ANULADA') {
-                return;
+            if (!$compraBloqueada->puedeAnularse()) {
+                return [
+                    'anulada' => false,
+                    'before' => null,
+                    'after' => null,
+                ];
             }
 
-            $this->inventarioService->revertirCompra((int) $compra->id);
+            $before = $compraBloqueada->toArray();
 
-            $compra->update([
+            // Una compra en tránsito no tiene inventario que revertir.
+            // Los items permanecen ACTIVO para conservar la trazabilidad.
+            $compraBloqueada->update([
                 'estado_compra' => 'ANULADA',
             ]);
+
+            return [
+                'anulada' => true,
+                'before' => $before,
+                'after' => $compraBloqueada->fresh()?->toArray(),
+            ];
         });
+
+        if (!$resultado['anulada']) {
+            return back()->with('danger', 'No se puede anular esta compra porque ya tiene una recepción registrada o no está en tránsito.');
+        }
 
         $this->auditService->log(
             'compra.anulada',
             'compras',
             $compra->id,
-            $before,
-            $compra->fresh()?->toArray()
+            $resultado['before'],
+            $resultado['after']
         );
 
-        return back()->with('success', 'Compra anulada y entradas de inventario revertidas correctamente.');
+        return back()->with('success', 'Compra anulada correctamente.');
     }
 }

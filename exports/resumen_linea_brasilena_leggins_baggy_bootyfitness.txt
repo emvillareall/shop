@@ -1,0 +1,75 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_leggins_baggy_20260904
+
+INTERPRETACION
+Producto | Color | Talla interpretada | Cantidad | Costo | Precio venta
+LEGGINS BAGGY PROMO | negro | XS | 6 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | negro | S | 4 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | negro | M-L | 4 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | rosa | XS | 4 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | rosa | S-M | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | rosa | M-L | 2 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | vino | XS | 3 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | vino | S-M | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | gris | XS | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | gris | S-M | 2 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | gris oxford | M-L | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | lila | XS-S | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | lila | M | 2 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | azul | S-M | 4 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | azul | XS | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | azul claro | XS-S | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | mezclilla | XS-S | 3 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | chedron | XS-S | 2 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | chedron | S-M | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | verde aqua | M-L | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | celeste bebe | M-L | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | uva | S-M | 3 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | uva | XS | 2 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | rojo | S-M | 3 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | coffy | M-L | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | cafe | S-M | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | lila bebe | M-L | 1 | USD 13.00 | USD 30.00
+LEGGINS BAGGY PROMO | negro musgo | M-L | 1 | USD 13.00 | USD 30.00
+
+NORMALIZACIONES
+- S -M se registró como S-M.
+- café se reutilizó como cafe.
+- celeste bebé se reutilizó como celeste bebe.
+- gris Oxford se registró como gris oxford.
+- lila bebé se registró como lila bebe.
+- Las tallas compuestas conservan la cantidad completa indicada; no se dividieron entre tallas individuales.
+
+PRECIOS
+- Costo unitario: USD 13.00.
+- Precio unitario de venta: USD 30.00.
+- Etiqueta conservada: PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 28.
+- Piezas: 58.
+- Costo total: USD 754.00.
+- Venta estimada: USD 1,740.00.
+- Utilidad bruta: USD 986.00.
+- Tallas compuestas detectadas: 20 variantes.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_leggins_baggy_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_leggins_baggy_bootyfitness.sql
+- Resumen: exports/resumen_linea_brasilena_leggins_baggy_bootyfitness.txt
+
+NOTA DE ESTRUCTURA
+- La base real no contiene una tabla stock_inicial; el stock inicial se carga en colores_productos.stock_por_color y mediante inventario_movimientos.
+
+RESULTADO DE EJECUCION
+- Insertado correctamente: Sí.
+- Producto: LEGGINS BAGGY PROMO (ID 23).
+- Compra inicial: carga_lb_leggins_baggy_20260904 (ID 23).
+- Variantes: 28.
+- Piezas: 58.
+- Costo total: USD 754.00.
+- Venta estimada: USD 1,740.00.
+- Utilidad bruta: USD 986.00.
+- Tallas compuestas: 20.
+- Validador: OK.

@@ -15,6 +15,10 @@ class ProductoVarianteController extends Controller
 
     public function shop(Producto $producto): JsonResponse
     {
+        $producto = Producto::query()
+            ->visibleEcommerce()
+            ->findOrFail($producto->getKey());
+
         return $this->buildResponse($producto);
     }
 
@@ -33,10 +37,17 @@ class ProductoVarianteController extends Controller
                 'colores_productos.colores_id',
                 'colores_productos.talla_por_color',
                 'colores_productos.stock_por_color',
-                DB::raw('COALESCE(colores.nombre_color, CONCAT("Color #", colores_productos.colores_id)) as nombre_color'),
-                DB::raw('COALESCE(colores.codigo_color, "#94a3b8") as codigo_color'),
+                'colores.nombre_color',
+                'colores.codigo_color',
             ])
             ->get();
+
+        $variantes->transform(function ($variante) {
+            $variante->nombre_color = $variante->nombre_color ?: 'Color #' . $variante->colores_id;
+            $variante->codigo_color = $variante->codigo_color ?: '#94a3b8';
+
+            return $variante;
+        });
 
         return response()->json($variantes);
     }

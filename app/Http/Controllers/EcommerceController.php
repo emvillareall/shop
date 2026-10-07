@@ -21,8 +21,21 @@ class EcommerceController extends Controller
         $carrito = session()->get('carrito', []);
         if (isset($carrito[$index])) {
             unset($carrito[$index]);
-            session()->put('carrito', array_values($carrito));
-            $stockReservaService->syncFromCart(session()->getId(), session()->get('carrito', []));
+            $carrito = $stockReservaService->filterVisibleEcommerceItems(array_values($carrito));
+            if (empty($carrito)) {
+                session()->forget('carrito');
+                $stockReservaService->releaseSession(session()->getId());
+            } else {
+                session()->put('carrito', $carrito);
+                try {
+                    $stockReservaService->syncFromCart(session()->getId(), $carrito);
+                } catch (\Throwable) {
+                    session()->forget('carrito');
+                    $stockReservaService->releaseSession(session()->getId());
+                    return redirect()->route('ecommerce.carrito.index')
+                        ->with('error', 'Uno o más productos de tu carrito ya no están disponibles.');
+                }
+            }
             return redirect()->route('ecommerce.carrito.index')->with('success', 'Producto eliminado del carrito.');
         }
 
@@ -45,6 +58,14 @@ class EcommerceController extends Controller
             'cantidad' => 'required|integer|min:1',
         ]);
 
+        $producto = Producto::query()
+            ->visibleEcommerce()
+            ->find((int) $validated['producto_id']);
+
+        if (!$producto) {
+            return back()->with('error', 'Este producto ya no está disponible en la tienda online.');
+        }
+
         $stockDisponible = $inventarioService->stockDisponibleVariante(
             (int) $validated['producto_id'],
             (int) $validated['color_id'],
@@ -56,6 +77,24 @@ class EcommerceController extends Controller
         }
 
         $carrito = session()->get('carrito', []);
+        try {
+            $carritoVisible = $stockReservaService->filterVisibleEcommerceItems($carrito);
+            if (count($carritoVisible) !== count($carrito)) {
+                $carrito = $carritoVisible;
+                if (empty($carrito)) {
+                    session()->forget('carrito');
+                    $stockReservaService->releaseSession(session()->getId());
+                } else {
+                    session()->put('carrito', $carrito);
+                    $stockReservaService->syncFromCart(session()->getId(), $carrito);
+                }
+            }
+        } catch (\Throwable) {
+            session()->forget('carrito');
+            $stockReservaService->releaseSession(session()->getId());
+            return back()->with('error', 'Uno o más productos de tu carrito ya no están disponibles.');
+        }
+
         $cantidadEnCarrito = collect($carrito)->filter(function ($item) use ($validated) {
             return (int) ($item['producto_id'] ?? 0) === (int) $validated['producto_id']
                 && (int) ($item['color_id'] ?? 0) === (int) $validated['color_id']
@@ -66,7 +105,6 @@ class EcommerceController extends Controller
             return back()->with('error', 'No hay suficiente stock para esa combinación (color/talla).');
         }
 
-        $producto = Producto::query()->findOrFail($validated['producto_id']);
         $color = Colores::query()->findOrFail($validated['color_id']);
 
         $carrito[] = [
@@ -82,7 +120,13 @@ class EcommerceController extends Controller
         ];
 
         session()->put('carrito', $carrito);
-        $stockReservaService->syncFromCart(session()->getId(), $carrito);
+        try {
+            $stockReservaService->syncFromCart(session()->getId(), $carrito);
+        } catch (\Throwable) {
+            session()->forget('carrito');
+            $stockReservaService->releaseSession(session()->getId());
+            return back()->with('error', 'Uno o más productos de tu carrito ya no están disponibles.');
+        }
 
         return back()->with('success', 'Producto agregado al carrito.');
     }
@@ -128,6 +172,9 @@ class EcommerceController extends Controller
 
     public function producto(Producto $producto): View
     {
+        $producto = Producto::query()
+            ->visibleEcommerce()
+            ->findOrFail($producto->getKey());
         $producto->load(['coloresStock.color', 'categoria']);
 
         return view('ecommerce.productos.show', compact('producto'));

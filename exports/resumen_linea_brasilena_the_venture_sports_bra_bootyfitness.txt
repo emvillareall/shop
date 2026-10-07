@@ -1,0 +1,37 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_the_venture_sports_bra_20260904
+
+INTERPRETACION
+- Producto: THE VENTURE SPORTS BRA PROMO
+- Linea: linea_brasilena
+- Categoria: TOP
+- Negro / XS-S: 1 pieza
+- Tallas compuestas detectadas: XS-S.
+- No se detectaron ambiguedades.
+
+PRECIOS
+- Costo unitario: USD 10.00.
+- Precio unitario de venta: USD 20.00.
+- Etiqueta conservada: PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 1.
+- Piezas: 1.
+- Costo total: USD 10.00.
+- Venta estimada: USD 20.00.
+- Utilidad bruta: USD 10.00.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_the_venture_sports_bra_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_the_venture_sports_bra_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: THE VENTURE SPORTS BRA PROMO (ID 18).
+- Variantes: 1.
+- Piezas: 1.
+- Costo total: USD 10.00.
+- Venta estimada: USD 20.00.
+- Utilidad bruta: USD 10.00.
+- Validador: OK.

@@ -1,0 +1,46 @@
+CARGA DE INVENTARIO BOOTYFITNESS
+Lote: linea_brasilena_halterneck_top_20260904
+
+Archivos generados:
+- insert_linea_brasilena_halterneck_top_productos_stock_bootyfitness.sql
+- validar_linea_brasilena_halterneck_top_bootyfitness.sql
+
+Resultado esperado:
+- Linea usada: linea_brasilena, existente en la base, ID actual 2.
+- Categoria usada: TOP, existente bajo la linea brasileña, ID actual 18.
+- Proveedor usado: Proveedor Línea Brasileña, ID actual 5.
+- Productos: 1.
+- Variantes: 2.
+- Piezas: 2.
+- Costo total: USD 15.00.
+- Venta estimada: USD 40.00.
+- Utilidad bruta estimada: USD 25.00.
+
+Producto:
+- Nombre: Halterneck Top.
+- Código: halterneck_top_lb_20260904.
+- Precio de compra: USD 7.50 por pieza, almacenado en precio_dolares_producto.
+- Precio de venta: USD 20.00 por pieza, almacenado en precio_venta_producto.
+- Etiqueta recibida: PROMO.
+- No se activa una promoción formal porque no se proporcionó un precio normal superior al precio promocional. Se conserva PROMO como etiqueta.
+
+Variantes:
+- blanco (#ffffff), talla S: 1 pieza.
+- blanco (#ffffff), talla M: 1 pieza.
+
+Inconsistencia o ambigüedad documentada:
+- El texto indica “2 piezas en color blanco talla S y M”, pero no asigna cantidad individual a cada talla. Se interpretó como 2 piezas totales distribuidas 1 S + 1 M. Si la intención era 2 piezas por cada talla, el lote debería corregirse a 4 piezas.
+
+Normalizaciones aplicadas:
+- “LÍNEA brasileña” -> “linea_brasilena”, reutilizando la línea existente.
+- “TOP” -> categoría existente TOP bajo linea_brasilena.
+- “blanco” -> color existente blanco con código #ffffff.
+- Tallas normalizadas a mayúsculas: S y M.
+- Precio decimal “7,50” normalizado a 7.50.
+
+Características de seguridad:
+- Usa SET NAMES utf8mb4 y collation utf8mb4_unicode_ci.
+- Usa transacción.
+- No hace DELETE, TRUNCATE ni DROP sobre tablas reales.
+- Usa códigos únicos, WHERE NOT EXISTS y evita duplicar variantes, items o movimientos al reejecutar.
+- No inserta imágenes.

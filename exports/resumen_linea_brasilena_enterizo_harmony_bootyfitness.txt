@@ -1,0 +1,34 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_enterizo_harmony_20260904
+
+INTERPRETACION
+- Producto: ENTERIZO HARMONY PROMO
+- Linea: linea_brasilena
+- Categoria: Enterizos corto
+- Negro / XS: 1 pieza
+- Negro / S-M: 3 piezas
+- Gris / S-M: 1 pieza
+- Tallas compuestas detectadas: S-M en negro y gris.
+- Observacion: "gris" no existia exactamente; se creo como color independiente con codigo #A9A9A9. "gris medio" se mantuvo sin cambios.
+
+RESULTADOS ESPERADOS
+- Variantes: 3
+- Piezas: 5
+- Costo total: USD 90.00
+- Venta estimada: USD 165.00
+- Utilidad bruta: USD 75.00
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_enterizo_harmony_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_enterizo_harmony_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: ENTERIZO HARMONY PROMO (ID 12).
+- Variantes: 3.
+- Piezas: 5.
+- Costo total: USD 90.00.
+- Venta estimada: USD 165.00.
+- Utilidad bruta: USD 75.00.
+- Validador: OK.

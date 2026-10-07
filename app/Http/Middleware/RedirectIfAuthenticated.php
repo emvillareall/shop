@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Producto;
 use App\Providers\RouteServiceProvider;
 use Closure;
 use Illuminate\Http\Request;
@@ -21,7 +22,12 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                return redirect(RouteServiceProvider::HOME);
+                $user = Auth::guard($guard)->user();
+                $destination = $user->can('administracion-completa')
+                    ? RouteServiceProvider::HOME
+                    : ($user->can('viewAny', Producto::class) ? route('productos.index') : route('ecommerce.home'));
+
+                return redirect($destination);
             }
         }
 

@@ -1,0 +1,44 @@
+RESUMEN DE CORRECCION DE PRODUCTO BOOTYFITNESS
+
+Producto: CONTOUR T SHIRTS PROMO
+Codigo: contour_t_shirts_lb_20260904
+
+AUDITORIA PREVIA
+- Variantes antes: 8.
+- Piezas antes: 20.
+- Costo total antes: USD 200.00.
+- Venta estimada antes: USD 400.00.
+- Utilidad bruta antes: USD 200.00.
+- Pedidos asociados: 0.
+- Movimientos de salida o venta: 0.
+
+CAMBIOS APLICADOS
+- Negro / M: de 5 a 6 piezas.
+- Azul / M-L: variante agregada con 1 pieza.
+- Se actualizó el movimiento de entrada inicial de negro/M de 5 a 6.
+- Se agregó el detalle de compra y el movimiento de entrada inicial de azul/M-L.
+- No se modificaron ventas ni pedidos.
+
+RESULTADO FINAL
+- Variantes: 9.
+- Piezas: 22.
+- Costo total: USD 220.00.
+- Venta estimada: USD 440.00.
+- Utilidad bruta: USD 220.00.
+- Tallas compuestas: XS-S y S-M; la nueva variante M-L conserva su cantidad completa.
+
+ARCHIVOS
+- SQL principal: exports/corregir_contour_t_shirts_bootyfitness.sql
+- Validador: exports/validar_contour_t_shirts_bootyfitness.sql
+- Resumen: exports/resumen_correccion_contour_t_shirts_bootyfitness.txt
+
+RESULTADO DE EJECUCION
+- Corregido correctamente: Sí.
+- Producto corregido: CONTOUR T SHIRTS PROMO (ID 21).
+- Variantes finales: 9.
+- Piezas finales: 22.
+- Costo total final: USD 220.00.
+- Venta estimada final: USD 440.00.
+- Utilidad bruta final: USD 220.00.
+- Cambios aplicados: negro/M de 5 a 6; azul/M-L agregado con 1 pieza.
+- Validador: OK.

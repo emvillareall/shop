@@ -1,0 +1,47 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_shorts_scruch_20260904
+
+INTERPRETACION
+Producto | Color | Talla interpretada | Cantidad | Costo | Precio venta
+SHORTS SCRUCH PROMO | celeste bebe | M-L | 1 | USD 8.00 | USD 15.00
+
+NORMALIZACIONES
+- celeste bebé se reutilizó como celeste bebe.
+- M-L se conservó como talla compuesta con la cantidad completa indicada.
+- No se detectaron ambigüedades.
+
+PRECIOS
+- Costo unitario: USD 8.00.
+- Precio unitario de venta: USD 15.00.
+- Etiqueta conservada: PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 1.
+- Piezas: 1.
+- Costo total: USD 8.00.
+- Venta estimada: USD 15.00.
+- Utilidad bruta: USD 7.00.
+- Tallas compuestas detectadas: 1.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_shorts_scruch_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_shorts_scruch_bootyfitness.sql
+- Resumen: exports/resumen_linea_brasilena_shorts_scruch_bootyfitness.txt
+
+NOTA DE ESTRUCTURA
+- La línea existente equivalente a Línea Americana se llama americana y fue reutilizada.
+- La categoría CONJUNTO SHORTS existente no se modificó; se creó/reutilizó una categoría CONJUNTOS asociada a americana.
+- La base real no contiene una tabla stock_inicial; el stock inicial se carga en colores_productos.stock_por_color y mediante inventario_movimientos.
+
+RESULTADO DE EJECUCION
+- Insertado correctamente: Sí.
+- Producto: SHORTS SCRUCH PROMO (ID 24).
+- Compra inicial: carga_lb_shorts_scruch_20260904 (ID 24).
+- Variantes: 1.
+- Piezas: 1.
+- Costo total: USD 8.00.
+- Venta estimada: USD 15.00.
+- Utilidad bruta: USD 7.00.
+- Tallas compuestas: 1.
+- Validador: OK.

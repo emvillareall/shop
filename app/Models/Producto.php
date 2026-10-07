@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -24,6 +25,7 @@ use Illuminate\Support\Str;
  * @property $promocion_fecha_fin
  * @property $promocion_etiqueta
  * @property $estado_producto
+ * @property bool $publicado_ecommerce
  * @property $compras_id
  * @property $created_at
  * @property $updated_at
@@ -61,12 +63,22 @@ class Producto extends Model
     protected $fillable = ['codigo_producto','descripcion_producto','cantidad_compra_producto','stock_venta_producto','precio_pesos_producto','precio_dolares_producto','precio_venta_producto','precio_promocional','promocion_activa','promocion_fecha_inicio','promocion_fecha_fin','promocion_etiqueta','estado_producto','imagen_producto','compras_id','categoria_producto_id'];
 
     protected $casts = [
+        'publicado_ecommerce' => 'boolean',
         'precio_venta_producto' => 'decimal:2',
         'precio_promocional' => 'decimal:2',
         'promocion_activa' => 'boolean',
         'promocion_fecha_inicio' => 'datetime',
         'promocion_fecha_fin' => 'datetime',
     ];
+
+    public function scopeVisibleEcommerce(Builder $query): Builder
+    {
+        $table = $query->getModel()->getTable();
+
+        return $query
+            ->where($table . '.estado_producto', 1)
+            ->where($table . '.publicado_ecommerce', true);
+    }
 
 public function precioNormal(): float
 {

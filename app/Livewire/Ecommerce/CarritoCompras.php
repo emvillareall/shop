@@ -22,14 +22,16 @@ class CarritoCompras extends Component
     public function mount(): void
     {
         $this->items = session()->get('carrito', []);
-        if (!empty($this->items)) {
-            $this->stockReservaService->syncFromCart(session()->getId(), $this->items);
-        }
+        $this->reconcileCart();
         $this->refreshReservationClock();
     }
 
     public function updateCantidad(int $index, int $cantidad): void
     {
+        if (!$this->reconcileCart()) {
+            return;
+        }
+
         if (!isset($this->items[$index])) {
             return;
         }
@@ -48,12 +50,18 @@ class CarritoCompras extends Component
 
         $this->items[$index]['cantidad'] = min(max(1, $cantidad), $maxStock);
         session()->put('carrito', $this->items);
-        $this->stockReservaService->syncFromCart(session()->getId(), $this->items);
+        if (!$this->reconcileCart()) {
+            return;
+        }
         $this->refreshReservationClock();
     }
 
     public function removeItem(int $index): void
     {
+        if (!$this->reconcileCart()) {
+            return;
+        }
+
         if (!isset($this->items[$index])) {
             return;
         }
@@ -61,11 +69,7 @@ class CarritoCompras extends Component
         unset($this->items[$index]);
         $this->items = array_values($this->items);
         session()->put('carrito', $this->items);
-        if (empty($this->items)) {
-            $this->stockReservaService->releaseSession(session()->getId());
-        } else {
-            $this->stockReservaService->syncFromCart(session()->getId(), $this->items);
-        }
+        $this->reconcileCart();
         $this->refreshReservationClock();
     }
 
@@ -88,6 +92,36 @@ class CarritoCompras extends Component
     private function refreshReservationClock(): void
     {
         $this->secondsRemaining = $this->stockReservaService->secondsRemaining();
+    }
+
+    private function reconcileCart(): bool
+    {
+        $storedItems = session()->get('carrito', []);
+        $visibleItems = $this->stockReservaService->filterVisibleEcommerceItems($storedItems);
+        $removedUnavailable = count($visibleItems) !== count($storedItems);
+        $this->items = $visibleItems;
+
+        try {
+            if (empty($visibleItems)) {
+                session()->forget('carrito');
+                $this->stockReservaService->releaseSession(session()->getId());
+            } else {
+                session()->put('carrito', $visibleItems);
+                $this->stockReservaService->syncFromCart(session()->getId(), $visibleItems);
+            }
+        } catch (\Throwable) {
+            $this->items = [];
+            session()->forget('carrito');
+            $this->stockReservaService->releaseSession(session()->getId());
+            $this->addError('carrito', 'Uno o más productos de tu carrito ya no están disponibles.');
+            return false;
+        }
+
+        if ($removedUnavailable) {
+            $this->addError('carrito', 'Uno o más productos de tu carrito ya no están disponibles.');
+        }
+
+        return true;
     }
 
     public function getTotalProperty(): float

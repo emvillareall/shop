@@ -3,6 +3,7 @@
 namespace App\Services\Inventario;
 
 use App\Models\ColoresProducto;
+use App\Models\Producto;
 use App\Models\StockReserva;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -14,9 +15,14 @@ class StockReservaService
 
     public function syncFromCart(string $sessionId, array $cartItems): void
     {
+        $this->assertVisibleEcommerceCart($cartItems);
         $this->releaseExpired();
 
         DB::transaction(function () use ($sessionId, $cartItems) {
+            // Keep publication and reservation decisions under the same product
+            // lock used by the administrative publication action.
+            $this->assertVisibleEcommerceCart($cartItems, true);
+
             $expiresAt = now()->addMinutes(self::TTL_MINUTES);
             $expected = $this->aggregateCart($cartItems);
 
@@ -77,6 +83,80 @@ class StockReservaService
 
             session()->put(self::SESSION_KEY_EXPIRES, $expiresAt->toIso8601String());
         });
+    }
+
+    /**
+     * Remove from a cart the items that no longer satisfy the public ecommerce rule.
+     * Only the supplied cart/session is affected; no other session reservations are touched.
+     */
+    public function filterVisibleEcommerceItems(array $cartItems): array
+    {
+        $productIds = collect($cartItems)
+            ->map(fn ($item) => (int) ($item['producto_id'] ?? 0))
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($productIds->isEmpty()) {
+            return [];
+        }
+
+        $visibleIds = Producto::query()
+            ->visibleEcommerce()
+            ->whereKey($productIds->all())
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return array_values(array_filter(
+            $cartItems,
+            fn ($item) => in_array((int) ($item['producto_id'] ?? 0), $visibleIds, true)
+        ));
+    }
+
+    /**
+     * Validate all cart products against the single public visibility rule.
+     * When requested, product locks are acquired in deterministic id order for checkout.
+     */
+    public function assertVisibleEcommerceCart(array $cartItems, bool $lockProducts = false): void
+    {
+        $productIds = collect($cartItems)
+            ->map(fn ($item) => (int) ($item['producto_id'] ?? 0))
+            ->values();
+
+        if ($productIds->contains(fn (int $id) => $id < 1)) {
+            throw new \RuntimeException('Uno o más productos de tu carrito ya no están disponibles.');
+        }
+
+        $productIds = $productIds->unique()->sort()->values();
+        if ($productIds->isEmpty()) {
+            return;
+        }
+
+        if ($lockProducts) {
+            foreach ($productIds as $productId) {
+                $visible = Producto::query()
+                    ->visibleEcommerce()
+                    ->whereKey($productId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$visible) {
+                    throw new \RuntimeException('Uno o más productos de tu carrito ya no están disponibles.');
+                }
+            }
+
+            return;
+        }
+
+        $visibleCount = Producto::query()
+            ->visibleEcommerce()
+            ->whereKey($productIds->all())
+            ->count();
+
+        if ($visibleCount !== $productIds->count()) {
+            throw new \RuntimeException('Uno o más productos de tu carrito ya no están disponibles.');
+        }
     }
 
     public function releaseSession(string $sessionId): void
@@ -145,4 +225,3 @@ class StockReservaService
         return $productoId . '|' . $colorId . '|' . $talla;
     }
 }
-

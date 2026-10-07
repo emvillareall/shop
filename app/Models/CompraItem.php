@@ -27,5 +27,19 @@ class CompraItem extends Model
     protected $casts = [
         'metadata' => 'array',
     ];
-}
 
+    public function recepciones()
+    {
+        return $this->hasMany(CompraRecepcionItem::class, 'compra_item_id');
+    }
+
+    public function producto()
+    {
+        return $this->belongsTo(Producto::class, 'producto_id');
+    }
+
+    public function color()
+    {
+        return $this->belongsTo(Colores::class, 'colores_id');
+    }
+}

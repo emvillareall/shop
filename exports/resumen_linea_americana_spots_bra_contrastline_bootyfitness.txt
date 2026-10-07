@@ -1,0 +1,53 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_americana_spots_bra_contrastline_20260904
+
+INTERPRETACION
+Producto | Color | Talla interpretada | Cantidad | Costo | Precio venta
+SPOTS BRA CONTRASTLINE PROMO | negro | XS | 4 | USD 7.00 | USD 20.00
+SPOTS BRA CONTRASTLINE PROMO | negro | S-M | 7 | USD 7.00 | USD 20.00
+SPOTS BRA CONTRASTLINE PROMO | vino | M-L | 4 | USD 7.00 | USD 20.00
+SPOTS BRA CONTRASTLINE PROMO | azul rey | S-M | 2 | USD 7.00 | USD 20.00
+SPOTS BRA CONTRASTLINE PROMO | azul marino | M-L | 2 | USD 7.00 | USD 20.00
+SPOTS BRA CONTRASTLINE PROMO | rosa | XS-S | 1 | USD 7.00 | USD 20.00
+SPOTS BRA CONTRASTLINE PROMO | celeste bebe | XS-S | 1 | USD 7.00 | USD 20.00
+
+NORMALIZACIONES
+- celeste bebé se reutilizó como celeste bebe.
+- Las tallas S-M, M-L y XS-S se conservaron como variantes compuestas con sus cantidades completas.
+- No se detectaron ambigüedades.
+
+PRECIOS
+- Costo unitario: USD 7.00.
+- Precio unitario de venta: USD 20.00.
+- Etiqueta conservada: PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 7.
+- Piezas: 21.
+- Costo total: USD 147.00.
+- Venta estimada: USD 420.00.
+- Utilidad bruta: USD 273.00.
+- Tallas compuestas detectadas: 6.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_americana_spots_bra_contrastline_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_americana_spots_bra_contrastline_bootyfitness.sql
+- Resumen: exports/resumen_linea_americana_spots_bra_contrastline_bootyfitness.txt
+
+NOTA DE ESTRUCTURA
+- La línea existente equivalente a Línea Americana se llama americana y fue reutilizada.
+- La categoría TOP no existía dentro de americana; se creó sin modificar TOPS ni las demás categorías.
+- La base real no contiene una tabla stock_inicial; el stock inicial se carga en colores_productos.stock_por_color y mediante inventario_movimientos.
+
+RESULTADO DE EJECUCION
+- Insertado correctamente: Sí.
+- Producto: SPOTS BRA CONTRASTLINE PROMO (ID 26).
+- Compra inicial: carga_la_spots_bra_contrastline_20260904 (ID 26).
+- Variantes: 7.
+- Piezas: 21.
+- Costo total: USD 147.00.
+- Venta estimada: USD 420.00.
+- Utilidad bruta: USD 273.00.
+- Tallas compuestas: 6.
+- Validador: OK.

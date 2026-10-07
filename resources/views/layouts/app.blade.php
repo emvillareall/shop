@@ -20,7 +20,12 @@
                     <i class="fa-solid fa-bars"></i>
                 </button>
 
-                <a href="{{ route('home') }}" class="hidden items-center gap-3 md:flex">
+                @php
+                    $backofficeHome = Auth::user()?->can('administracion-completa')
+                        ? route('home')
+                        : route('productos.index');
+                @endphp
+                <a href="{{ $backofficeHome }}" class="hidden items-center gap-3 md:flex">
                     <img src="{{ asset('imagenes/logotipo.png') }}" alt="Booty Fitness" class="h-10 w-10 rounded-full object-cover ring-2 ring-brand-200">
                     <span class="text-lg font-bold tracking-tight text-slate-900">{{ config('app.name') }}</span>
                 </a>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Producto;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,7 +34,12 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
 
-            return redirect()->intended(RouteServiceProvider::HOME);
+            $user = $request->user();
+            $destination = $user->can('administracion-completa')
+                ? RouteServiceProvider::HOME
+                : ($user->can('viewAny', Producto::class) ? route('productos.index') : route('ecommerce.home'));
+
+            return redirect()->intended($destination);
         }
 
         return back()->withErrors([

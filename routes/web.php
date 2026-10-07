@@ -10,6 +10,8 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ColoreController;
 use App\Http\Controllers\ColoresProductoController;
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\CompraRecepcionController;
+use App\Http\Controllers\ProveedorReclamoController;
 use App\Http\Controllers\DetallePedidoController;
 use App\Http\Controllers\EcommerceController;
 use App\Http\Controllers\LineasRopaController;
@@ -21,19 +23,35 @@ use App\Http\Controllers\PaymentFlowController;
 use App\Http\Controllers\PaymentGatewayConfigController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\PDFController;
+use App\Http\Controllers\PayphoneToolController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\ProductoPublicacionController;
 use App\Http\Controllers\ProductoVarianteController;
 use App\Http\Controllers\ProveedoreController;
 use App\Http\Controllers\StockReservaMetricsController;
 use App\Http\Controllers\TiendaController;
 use App\Http\Controllers\VentaController;
+use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 
 Route::get('/', function () {
     return view('landing');
 });
+
+Route::get('/descargas/auditoria-tallas-compuestas-20260904', function () {
+    $archivo = base_path('exports/auditoria_tallas_compuestas_bootyfitness_20260904.md');
+
+    abort_unless(is_file($archivo), 404);
+
+    return response()->download(
+        $archivo,
+        'auditoria_tallas_compuestas_bootyfitness_20260904.md',
+        ['Content-Type' => 'text/markdown; charset=UTF-8']
+    );
+})->name('descargas.auditoria_tallas_compuestas');
+
 Route::middleware('storefront')->group(function () {
     Route::get('/catalogo', [CatalogoController::class, 'catalogoGeneral'])->name('catalogo.general');
     Route::get('/catalogo/descargar', [CatalogoController::class, 'descargarCatalogoPDF'])->name('catalogo.descargar');
@@ -63,58 +81,95 @@ Route::get('email/verify', [VerificationController::class, 'show'])->name('verif
 Route::get('email/verify/{id}/{hash}', [VerificationController::class, 'verify'])->name('verification.verify');
 Route::post('email/resend', [VerificationController::class, 'resend'])->name('verification.resend');
 
+// Independent PayPhone link tool. These routes intentionally do not use auth.
+Route::get('/cobros', [PayphoneToolController::class, 'index'])->name('payphone-tool.index');
+Route::post('/cobros/acceso', [PayphoneToolController::class, 'access'])->name('payphone-tool.access');
+Route::post('/cobros/salir', [PayphoneToolController::class, 'logout'])->name('payphone-tool.logout');
+Route::post('/cobros/generar', [PayphoneToolController::class, 'generate'])
+    ->middleware(['payphone.tool', 'throttle:payphone-tool.generate'])
+    ->name('payphone-tool.generate');
+
 // Admin/backoffice
 Route::middleware(['auth'])->group(function () {
-    Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-    Route::post('/home/venta-fisica', [App\Http\Controllers\HomeController::class, 'registrarVentaFisica'])->name('home.venta_fisica');
+    Route::patch('productos/{producto}/publicar', [ProductoPublicacionController::class, 'publicar'])
+        ->middleware('can:update,producto')
+        ->name('productos.publicar');
+    Route::patch('productos/{producto}/ocultar', [ProductoPublicacionController::class, 'ocultar'])
+        ->middleware('can:update,producto')
+        ->name('productos.ocultar');
 
-    Route::resource('clientes', ClienteController::class);
-    Route::resource('tiendas', TiendaController::class);
-    Route::resource('pedidos', PedidoController::class);
-    Route::post('pedidos/{pedido}/confirmar-pago-social', [PedidoController::class, 'confirmarPagoSocial'])->name('pedidos.confirmar_pago_social');
-    Route::resource('proveedores', ProveedoreController::class);
-    Route::resource('productos', ProductoController::class);
+    Route::resource('productos', ProductoController::class)
+        ->middlewareFor('index', 'can:viewAny,' . Producto::class)
+        ->middlewareFor('show', 'can:view,producto')
+        ->middlewareFor(['create', 'store'], 'can:create,' . Producto::class)
+        ->middlewareFor(['edit', 'update'], 'can:update,producto')
+        ->middlewareFor('destroy', 'can:delete,producto');
     Route::get('lineas/{linea}/categorias', [ProductoController::class, 'categoriasPorLinea'])
+        ->middleware('can:viewAny,' . Producto::class)
         ->name('lineas.categorias');
-    Route::resource('compras', CompraController::class);
-    Route::post('compras/{compra}/ajustar-inventario', [CompraController::class, 'ajustarInventario'])->name('compras.ajustar_inventario');
-    Route::post('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
-    Route::resource('parametros', ParametroController::class);
-    Route::resource('detalle-pedidos', DetallePedidoController::class);
-    Route::resource('colores-productos', ColoresProductoController::class);
-    Route::resource('colores', ColoreController::class);
-    Route::resource('categorias-productos', CategoriasProductoController::class);
-    Route::resource('lineas-ropa', LineasRopaController::class);
-    Route::get('pagos', [PagoController::class, 'index'])->name('pagos.index');
-    Route::get('pagos/configuracion', [PaymentGatewayConfigController::class, 'index'])->name('pagos.configuracion.index');
-    Route::post('pagos/configuracion/{gateway}', [PaymentGatewayConfigController::class, 'update'])->name('pagos.configuracion.update');
-    Route::get('ventas', [VentaController::class, 'index'])->name('ventas.index');
-    Route::get('apartados', [ApartadoController::class, 'index'])->name('apartados.index');
-    Route::post('ventas/{venta}/abonos', [VentaController::class, 'registrarAbono'])->name('ventas.abonos.store');
-    Route::post('pagos/{pago}/aprobar', [PagoController::class, 'aprobar'])->name('pagos.aprobar');
-    Route::post('pagos/{pago}/rechazar', [PagoController::class, 'rechazar'])->name('pagos.rechazar');
-    Route::get('admin/stock-reservas', [StockReservaMetricsController::class, 'index'])->name('admin.stock-reservas.index');
-    Route::get('reportes', [App\Http\Controllers\ReportesController::class, 'index'])->name('reportes');
-    Route::get('reportes/show/{id}', [App\Http\Controllers\ReportesController::class, 'show'])->name('show');
-    Route::get('auditoria', [App\Http\Controllers\AuditLogController::class, 'index'])->name('auditoria.index');
-    Route::get('auditoria/export-csv', [App\Http\Controllers\AuditLogController::class, 'exportCsv'])->name('auditoria.export_csv');
-    Route::get('/admin/api/productos/{producto}/variantes', [ProductoVarianteController::class, 'admin'])
-        ->middleware('throttle:120,1')
-        ->name('admin.productos.variantes');
 
-    // Legacy helpers disabled by design
-    Route::get('/clientes/buscar/{cedula}', function () {
-        return response()->json([
-            'ok' => false,
-            'message' => 'Busqueda legacy deshabilitada por seguridad.',
-        ], 410);
-    })->middleware('throttle:30,1');
-    Route::post('/clientes/registrar', [ClienteController::class, 'registrar'])
-        ->middleware('throttle:20,1');
+    Route::middleware('can:administracion-completa')->group(function () {
+        Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+        Route::post('/home/venta-fisica', [App\Http\Controllers\HomeController::class, 'registrarVentaFisica'])->name('home.venta_fisica');
+
+        Route::resource('clientes', ClienteController::class);
+        Route::resource('tiendas', TiendaController::class);
+        Route::resource('pedidos', PedidoController::class);
+        Route::post('pedidos/{pedido}/confirmar-pago-social', [PedidoController::class, 'confirmarPagoSocial'])->name('pedidos.confirmar_pago_social');
+        Route::resource('proveedores', ProveedoreController::class);
+        Route::resource('compras', CompraController::class);
+        Route::get('compras/{compra}/recepcion', [CompraRecepcionController::class, 'create'])->name('compras.recepcion.create');
+        Route::post('compras/{compra}/recepciones', [CompraRecepcionController::class, 'store'])->name('compras.recepciones.store');
+        Route::post('compras/{compra}/reclamos', [ProveedorReclamoController::class, 'store'])->name('compras.reclamos.store');
+        Route::get('compras/{compra}/reclamos/{reclamo}', [ProveedorReclamoController::class, 'show'])->name('compras.reclamos.show');
+        Route::post('compras/{compra}/reclamos/{reclamo}/lineas', [ProveedorReclamoController::class, 'agregarLinea'])->name('compras.reclamos.lineas.store');
+        Route::post('compras/{compra}/reclamos/{reclamo}/enviar', [ProveedorReclamoController::class, 'enviar'])->name('compras.reclamos.enviar');
+        Route::post('compras/{compra}/reclamos/{reclamo}/gestion', [ProveedorReclamoController::class, 'gestion'])->name('compras.reclamos.gestion');
+        Route::post('compras/{compra}/reclamos/{reclamo}/cancelar', [ProveedorReclamoController::class, 'cancelar'])->name('compras.reclamos.cancelar');
+        Route::post('compras/{compra}/reclamos/{reclamo}/lineas/{linea}/cancelar', [ProveedorReclamoController::class, 'cancelarLinea'])->name('compras.reclamos.lineas.cancelar');
+        Route::post('compras/{compra}/reclamos/{reclamo}/lineas/{linea}/resoluciones', [ProveedorReclamoController::class, 'registrarResolucion'])->name('compras.reclamos.resoluciones.store');
+        Route::post('compras/{compra}/reclamos/{reclamo}/resoluciones/{resolucion}/resolver', [ProveedorReclamoController::class, 'resolverResolucion'])->name('compras.reclamos.resoluciones.resolver');
+        Route::post('compras/{compra}/reclamos/{reclamo}/resoluciones/{resolucion}/cancelar', [ProveedorReclamoController::class, 'cancelarResolucion'])->name('compras.reclamos.resoluciones.cancelar');
+        Route::post('compras/{compra}/reclamos/{reclamo}/resoluciones/{resolucion}/reposiciones', [ProveedorReclamoController::class, 'recibirReposicion'])->name('compras.reclamos.reposiciones.store');
+        Route::post('compras/{compra}/ajustar-inventario', [CompraController::class, 'ajustarInventario'])->name('compras.ajustar_inventario');
+        Route::post('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
+        Route::resource('parametros', ParametroController::class);
+        Route::resource('detalle-pedidos', DetallePedidoController::class);
+        Route::resource('colores-productos', ColoresProductoController::class);
+        Route::resource('colores', ColoreController::class);
+        Route::resource('categorias-productos', CategoriasProductoController::class);
+        Route::resource('lineas-ropa', LineasRopaController::class);
+        Route::get('pagos', [PagoController::class, 'index'])->name('pagos.index');
+        Route::get('pagos/configuracion', [PaymentGatewayConfigController::class, 'index'])->name('pagos.configuracion.index');
+        Route::post('pagos/configuracion/{gateway}', [PaymentGatewayConfigController::class, 'update'])->name('pagos.configuracion.update');
+        Route::get('ventas', [VentaController::class, 'index'])->name('ventas.index');
+        Route::get('apartados', [ApartadoController::class, 'index'])->name('apartados.index');
+        Route::post('ventas/{venta}/abonos', [VentaController::class, 'registrarAbono'])->name('ventas.abonos.store');
+        Route::post('pagos/{pago}/aprobar', [PagoController::class, 'aprobar'])->name('pagos.aprobar');
+        Route::post('pagos/{pago}/rechazar', [PagoController::class, 'rechazar'])->name('pagos.rechazar');
+        Route::get('admin/stock-reservas', [StockReservaMetricsController::class, 'index'])->name('admin.stock-reservas.index');
+        Route::get('reportes', [App\Http\Controllers\ReportesController::class, 'index'])->name('reportes');
+        Route::get('reportes/show/{id}', [App\Http\Controllers\ReportesController::class, 'show'])->name('show');
+        Route::get('auditoria', [App\Http\Controllers\AuditLogController::class, 'index'])->name('auditoria.index');
+        Route::get('auditoria/export-csv', [App\Http\Controllers\AuditLogController::class, 'exportCsv'])->name('auditoria.export_csv');
+        Route::get('/admin/api/productos/{producto}/variantes', [ProductoVarianteController::class, 'admin'])
+            ->middleware('throttle:120,1')
+            ->name('admin.productos.variantes');
+
+        // Legacy helpers disabled by design
+        Route::get('/clientes/buscar/{cedula}', function () {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Busqueda legacy deshabilitada por seguridad.',
+            ], 410);
+        })->middleware('throttle:30,1');
+        Route::post('/clientes/registrar', [ClienteController::class, 'registrar'])
+            ->middleware('throttle:20,1');
+    });
 });
 
 // Signed PDFs
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'can:administracion-completa'])->group(function () {
     Route::get('/pdf_pedidos/{id}', function ($id) {
         $signed = URL::temporarySignedRoute('pdf.pedido.signed', now()->addMinutes(5), ['id' => $id]);
         return redirect()->to($signed);
@@ -134,7 +189,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post('event/link-subscribe/{id}', [App\Http\Controllers\EventController::class, 'getLinkSubscribe'])
-    ->middleware(['auth', 'throttle:20,1'])
+    ->middleware(['auth', 'can:administracion-completa', 'throttle:20,1'])
     ->name('event.getLinkSubscribe');
 
 Route::get('event/suscribirse/{id}', [App\Http\Controllers\EventController::class, 'subscribe'])

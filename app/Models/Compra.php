@@ -47,11 +47,42 @@ class Compra extends Model
      *
      * @var array
      */
-    protected $fillable = ['codigo_compra','descripcion_compra','envio_compra','importacion_compra','estado_compra','proveedor_id'];
+    protected $fillable = ['codigo_compra','descripcion_compra','envio_compra','importacion_compra','estado_compra','estado_recepcion','proveedor_id'];
 
     public function items()
     {
         return $this->hasMany(CompraItem::class, 'compra_id');
+    }
+
+    public function recepciones()
+    {
+        return $this->hasMany(CompraRecepcion::class, 'compra_id');
+    }
+
+    public function reclamosProveedor()
+    {
+        return $this->hasMany(ProveedorReclamo::class, 'compra_id');
+    }
+
+    public function tieneRecepciones(): bool
+    {
+        if (array_key_exists('recepciones_count', $this->attributes)) {
+            return (int) $this->attributes['recepciones_count'] > 0;
+        }
+
+        return $this->recepciones()->exists();
+    }
+
+    public function puedeAnularse(): bool
+    {
+        return strtoupper(trim((string) $this->estado_compra)) !== 'ANULADA'
+            && (string) $this->estado_recepcion === 'EN_TRANSITO'
+            && !$this->tieneRecepciones();
+    }
+
+    public function proveedor()
+    {
+        return $this->belongsTo(Proveedore::class, 'proveedor_id');
     }
 
 

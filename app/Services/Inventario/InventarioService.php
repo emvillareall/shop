@@ -80,7 +80,10 @@ class InventarioService
         int $cantidad,
         ?int $compraId = null,
         ?int $compraItemId = null,
-        ?string $motivo = null
+        ?string $motivo = null,
+        array $contexto = [],
+        string $tipoMovimiento = 'ENTRADA_COMPRA',
+        ?int $usuarioId = null
     ): void {
         if ($cantidad <= 0) {
             return;
@@ -101,12 +104,12 @@ class InventarioService
         $variante->increment('stock_por_color', $cantidad);
         $stockDespues = $stockAntes + $cantidad;
 
-        InventarioMovimiento::query()->create([
+        $movimiento = [
             'producto_id' => $productoId,
             'colores_productos_id' => $variante->id,
             'compra_id' => $compraId,
-            'user_id' => auth()->id(),
-            'tipo_movimiento' => 'ENTRADA_COMPRA',
+            'user_id' => $usuarioId ?? auth()->id(),
+            'tipo_movimiento' => $tipoMovimiento,
             'cantidad' => abs($cantidad),
             'stock_antes' => $stockAntes,
             'stock_despues' => $stockDespues,
@@ -116,7 +119,21 @@ class InventarioService
                 'talla' => $talla,
                 'compra_item_id' => $compraItemId,
             ],
-        ]);
+        ];
+
+        foreach ([
+            'compra_item_id',
+            'compra_recepcion_id',
+            'compra_recepcion_item_id',
+            'proveedor_reclamo_reposicion_id',
+        ] as $campo) {
+            if (($contexto[$campo] ?? null) !== null) {
+                $movimiento[$campo] = (int) $contexto[$campo];
+                $movimiento['metadata'][$campo] = (int) $contexto[$campo];
+            }
+        }
+
+        InventarioMovimiento::query()->create($movimiento);
 
         $this->sincronizarStockProducto($productoId);
     }

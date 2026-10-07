@@ -202,7 +202,22 @@
             </div>
         @endif
 
-        {{ Form::hidden('compras_id', $compras_id) }}
+        @if($isEdit)
+            {{ Form::hidden('compras_id', $compras_id) }}
+        @else
+            <div class="form-group mt-4">
+                <label for="compras_id" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Compra asociada</label>
+                <select id="compras_id" name="compras_id" class="form-control{{ $errors->has('compras_id') ? ' is-invalid' : '' }}" required>
+                    <option value="">Selecciona una compra</option>
+                    @foreach($compras as $compra)
+                        <option value="{{ $compra->id }}" @selected((string) old('compras_id', $compras_id) === (string) $compra->id)>
+                            {{ $compra->codigo_compra }} — {{ $compra->descripcion_compra }}
+                        </option>
+                    @endforeach
+                </select>
+                {!! $errors->first('compras_id', '<div class="invalid-feedback">:message</div>') !!}
+            </div>
+        @endif
     </div>
 
     <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">

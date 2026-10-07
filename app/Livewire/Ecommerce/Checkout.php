@@ -151,20 +151,13 @@ class Checkout extends Component
 
     public function confirmarPedido()
     {
-        $items = session()->get('carrito', []);
-        if (empty($items)) {
-            $this->addError('cliente_id', 'El carrito esta vacio.');
+        if (!$this->reconcileCart(true)) {
             return null;
         }
 
-        try {
-            $this->stockReservaService->assertSessionActive(session()->getId());
-            $this->stockReservaService->syncFromCart(session()->getId(), $items);
-            $this->refreshReservationClock();
-        } catch (\Throwable $e) {
-            session()->forget('carrito');
-            $this->items = [];
-            $this->addError('cliente_id', $e->getMessage());
+        $items = $this->items;
+        if (empty($items)) {
+            $this->addError('cliente_id', 'El carrito esta vacio.');
             return null;
         }
 
@@ -191,9 +184,14 @@ class Checkout extends Component
 
         $breakdown = $this->calcularTotales($items);
 
-        [$pedido, $pago] = DB::transaction(function () use ($items, $comprobantePath, $breakdown) {
-            $estadoPedido = $this->metodo_pago === 'transferencia' ? 'PAGO_EN_REVISION' : 'PENDIENTE_PAGO';
-            $estadoPago = $this->metodo_pago === 'transferencia' ? 'EN_REVISION' : 'PENDIENTE';
+        $sessionId = session()->getId();
+        try {
+            [$pedido, $pago] = DB::transaction(function () use ($items, $comprobantePath, $breakdown, $sessionId) {
+                $this->stockReservaService->assertVisibleEcommerceCart($items, true);
+                $this->stockReservaService->assertSessionActive($sessionId);
+
+                $estadoPedido = $this->metodo_pago === 'transferencia' ? 'PAGO_EN_REVISION' : 'PENDIENTE_PAGO';
+                $estadoPago = $this->metodo_pago === 'transferencia' ? 'EN_REVISION' : 'PENDIENTE';
 
             $pedido = Pedido::create([
                 'codigo_pedido' => 'BF-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
@@ -284,11 +282,22 @@ class Checkout extends Component
                 ]);
             }
 
-            $this->stockReservaService->consumeSessionReservations(session()->getId());
+            $this->stockReservaService->consumeSessionReservations($sessionId);
             session()->forget('carrito');
 
-            return [$pedido, $pago];
-        });
+                return [$pedido, $pago];
+            });
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'Uno o más productos de tu carrito ya no están disponibles.') {
+                session()->forget('carrito');
+                $this->items = [];
+                $this->stockReservaService->releaseSession($sessionId);
+                $this->addError('cliente_id', 'Uno o más productos de tu carrito ya no están disponibles.');
+                return null;
+            }
+
+            throw $e;
+        }
 
         if ($this->metodo_pago === 'paypal') {
             try {
@@ -405,14 +414,7 @@ class Checkout extends Component
         }
 
         $this->items = session()->get('carrito', []);
-        if (!empty($this->items)) {
-            try {
-                $this->stockReservaService->syncFromCart(session()->getId(), $this->items);
-            } catch (\Throwable) {
-                session()->forget('carrito');
-                $this->items = [];
-            }
-        }
+        $this->reconcileCart();
         $this->refreshReservationClock();
     }
 
@@ -430,6 +432,40 @@ class Checkout extends Component
     private function refreshReservationClock(): void
     {
         $this->secondsRemaining = $this->stockReservaService->secondsRemaining();
+    }
+
+    private function reconcileCart(bool $requireActiveReservation = false): bool
+    {
+        $storedItems = session()->get('carrito', []);
+        $visibleItems = $this->stockReservaService->filterVisibleEcommerceItems($storedItems);
+        $removedUnavailable = count($visibleItems) !== count($storedItems);
+        $this->items = $visibleItems;
+
+        try {
+            if (empty($visibleItems)) {
+                session()->forget('carrito');
+                $this->stockReservaService->releaseSession(session()->getId());
+            } else {
+                session()->put('carrito', $visibleItems);
+                if ($requireActiveReservation) {
+                    $this->stockReservaService->assertSessionActive(session()->getId());
+                }
+                $this->stockReservaService->syncFromCart(session()->getId(), $visibleItems);
+            }
+        } catch (\Throwable $e) {
+            session()->forget('carrito');
+            $this->items = [];
+            $this->stockReservaService->releaseSession(session()->getId());
+            $this->addError('cliente_id', $e->getMessage());
+            return false;
+        }
+
+        if ($removedUnavailable) {
+            $this->addError('cliente_id', 'Uno o más productos de tu carrito ya no están disponibles.');
+            return false;
+        }
+
+        return true;
     }
 
     public function render()

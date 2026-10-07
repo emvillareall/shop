@@ -13,6 +13,10 @@ class InventarioMovimiento extends Model
         'colores_productos_id',
         'pedido_id',
         'compra_id',
+        'compra_item_id',
+        'compra_recepcion_id',
+        'compra_recepcion_item_id',
+        'proveedor_reclamo_reposicion_id',
         'user_id',
         'tipo_movimiento',
         'cantidad',
@@ -25,5 +29,27 @@ class InventarioMovimiento extends Model
     protected $casts = [
         'metadata' => 'array',
     ];
-}
 
+    public function compraItem()
+    {
+        return $this->belongsTo(CompraItem::class, 'compra_item_id');
+    }
+
+    public function compraRecepcion()
+    {
+        return $this->belongsTo(CompraRecepcion::class, 'compra_recepcion_id');
+    }
+
+    public function compraRecepcionItem()
+    {
+        return $this->belongsTo(CompraRecepcionItem::class, 'compra_recepcion_item_id');
+    }
+
+    public function reposicionProveedor()
+    {
+        return $this->belongsTo(
+            ProveedorReclamoReposicion::class,
+            'proveedor_reclamo_reposicion_id'
+        );
+    }
+}

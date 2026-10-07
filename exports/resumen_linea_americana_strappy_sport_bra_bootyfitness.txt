@@ -1,0 +1,63 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_americana_strappy_sport_bra_20260904
+
+INTERPRETACION
+Producto | Color | Talla interpretada | Cantidad | Costo | Precio venta
+STRAPPY SPORT BRA | negro | XS-S | 2 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | blanco | XS-S | 2 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | blanco | S-M | 1 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | vino | XS-S | 1 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | vino | M | 1 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | verde quemado | M | 1 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | violeta | XS-S | 1 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | violeta | S-M | 3 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | fucsia | M-L | 1 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | lila | M | 1 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | rosa barbie | XS-S | 1 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | lila oscuro | XS-S | 1 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | lila oscuro | M | 2 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | coffy | S-M | 2 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | azul marino | XS-S-M | 1 | USD 6.00 | USD 26.00
+STRAPPY SPORT BRA | coral | XS-S | 1 | USD 6.00 | USD 26.00
+
+NORMALIZACIONES
+- Fuscia se normalizó a fucsia.
+- Barbie se normalizó a rosa barbie.
+- Las tallas XS-S, S-M, M-L y XS-S-M se conservaron como variantes compuestas con sus cantidades completas.
+- No se detectaron ambigüedades.
+
+PRECIOS
+- Costo unitario: USD 6.00.
+- Precio unitario de venta: USD 26.00.
+- No se indicó PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 16.
+- Piezas: 22.
+- Costo total: USD 132.00.
+- Venta estimada: USD 572.00.
+- Utilidad bruta: USD 440.00.
+- Tallas compuestas detectadas: 12.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_americana_strappy_sport_bra_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_americana_strappy_sport_bra_bootyfitness.sql
+- Resumen: exports/resumen_linea_americana_strappy_sport_bra_bootyfitness.txt
+
+NOTA DE ESTRUCTURA
+- La línea existente equivalente a Línea Americana se llama americana y fue reutilizada.
+- La categoría TOPS existente asociada a americana fue reutilizada.
+- La base real no contiene una tabla stock_inicial; el stock inicial se carga en colores_productos.stock_por_color y mediante inventario_movimientos.
+
+RESULTADO DE EJECUCION
+- Insertado correctamente: Sí.
+- Producto: STRAPPY SPORT BRA (ID 28).
+- Compra inicial: carga_la_strappy_sport_bra_20260904 (ID 28).
+- Variantes: 16.
+- Piezas: 22.
+- Costo total: USD 132.00.
+- Venta estimada: USD 572.00.
+- Utilidad bruta: USD 440.00.
+- Tallas compuestas: 12.
+- Validador: OK.

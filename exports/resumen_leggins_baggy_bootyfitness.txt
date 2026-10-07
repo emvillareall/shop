@@ -1,0 +1,42 @@
+RESUMEN DE CORRECCION DE PRODUCTO BOOTYFITNESS
+
+Producto: LEGGINS BAGGY PROMO
+Codigo: leggins_baggy_lb_20260904
+
+AUDITORIA PREVIA
+- Variantes antes: 28.
+- Piezas antes: 58.
+- Costo total antes: USD 754.00.
+- Venta estimada antes: USD 1,740.00.
+- Utilidad bruta antes: USD 986.00.
+- Pedidos asociados: 0.
+- Movimientos de salida o venta: 0.
+
+CAMBIO APLICADO
+- Negro / M-L: cantidad actualizada de 4 a 5 piezas.
+- Se actualizaron la variante, el detalle de compra y el movimiento de entrada inicial.
+- Se actualizaron los totales del producto y de la compra inicial.
+- No se modificaron ventas ni pedidos.
+
+RESULTADO FINAL ESPERADO
+- Variantes: 28.
+- Piezas: 59.
+- Costo total: USD 767.00.
+- Venta estimada: USD 1,770.00.
+- Utilidad bruta: USD 1,003.00.
+
+ARCHIVOS
+- SQL principal: exports/corregir_leggins_baggy_bootyfitness.sql
+- Validador: exports/validar_leggins_baggy_bootyfitness.sql
+- Resumen: exports/resumen_leggins_baggy_bootyfitness.txt
+
+RESULTADO DE EJECUCION
+- Corregido correctamente: Sí.
+- Producto corregido: LEGGINS BAGGY PROMO (ID 23).
+- Variante modificada: Negro / M-L, de 4 a 5 piezas.
+- Variantes finales: 28.
+- Piezas finales: 59.
+- Costo total final: USD 767.00.
+- Venta estimada final: USD 1,770.00.
+- Utilidad bruta final: USD 1,003.00.
+- Validador: OK.

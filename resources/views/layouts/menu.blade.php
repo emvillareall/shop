@@ -23,11 +23,14 @@
 @foreach ($items as $item)
     @php
         $active = Request::routeIs($item['route']);
+        $allowed = $item['route'] === 'productos.index'
+            ? Auth::user()?->can('viewAny', \App\Models\Producto::class)
+            : Auth::user()?->can('administracion-completa');
     @endphp
+    @continue(!$allowed)
     <a href="{{ route($item['route']) }}"
        class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition {{ $active ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-700 hover:bg-white/70 hover:text-brand-700' }}">
         <i class="{{ $item['icon'] }} w-4 text-center"></i>
         <span>{{ $item['label'] }}</span>
     </a>
 @endforeach
-

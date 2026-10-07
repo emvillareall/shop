@@ -1,0 +1,280 @@
+AUDITORÍA FINAL DE COMPRA GYMSHARK — BOOTYFITNESS
+Fecha de auditoría: 2026-10-07
+Base auditada: guias | Proyecto: /var/www/bootyfitness
+Modo: solo lectura. No se ejecutaron operaciones de modificación ni se generó SQL de inserción.
+
+A. RESUMEN EJECUTIVO
+Excel leído correctamente: /var/www/bootyfitness/exports/compra_gymshark_consolidado_tandas_1_4.xlsx. Hojas: Compra_Gymshark (152x17); Resumen (42x8); Catalogos (6x3); Duplicados_detectados (6x17).
+La hoja Compra_Gymshark contiene 150 filas útiles; 60 tienen observaciones; 0 están incompletas según los campos mínimos; la hoja Duplicados_detectados contiene 5 filas.
+La línea GymShark existe con id 1 y estado 1. No existe proveedor Gymshark Oficial ni categorías asociadas a la línea.
+El consolidado produce 75 productos finales, 150 variantes y 229 piezas. El precio visible se interpreta como costo unitario; la importación se prorratea por valor.
+
+DECISIONES APLICADAS
+- Reutilizar línea existente GymShark; no crear otra línea.
+- Proveedor objetivo: Gymshark Oficial, pendiente de crear; no se creó en esta auditoría.
+- Crear categorías bajo GymShark sin reutilizar categorías de Línea Americana/Brasileña.
+- Mantener cada color compuesto con barra como un único color comercial.
+- Productos con costos distintos separados por nombre con sufijo de costo.
+- Compra futura: CMP-GYMSHARK-20261007-01; envío USD 0; importación USD 1022; moneda USD.
+- Precio venta 0, precio promocional NULL, promoción inactiva, publicación ecommerce desactivada.
+- Stock inicial físico/vendible en 0 y sin movimiento ENTRADA_COMPRA hasta recepción.
+
+B. TABLAS INVOLUCRADAS Y COLUMNAS RELEVANTES
+lineas_ropa: EXISTE | columnas: id, nombre_linea, estado_linea, created_at, updated_at
+categorias_productos: EXISTE | columnas: id, nombre_categoria, linea_ropa_id, estado_categoria, created_at, updated_at
+productos: EXISTE | columnas: id, codigo_producto, descripcion_producto, imagen_producto, cantidad_compra_producto, stock_venta_producto, precio_pesos_producto, precio_dolares_producto, precio_venta_producto, precio_promocional, promocion_activa, promocion_fecha_inicio, promocion_fecha_fin, promocion_etiqueta, compras_id, estado_producto, publicado_ecommerce, created_at, updated_at, categoria_producto_id
+colores: EXISTE | columnas: id, nombre_color, codigo_color, created_at, updated_at
+colores_productos: EXISTE | columnas: id, producto_id, colores_id, cantidad_por_color, stock_por_color, talla_por_color, created_at, updated_at
+proveedores: EXISTE | columnas: id, tienda_proveedor, nombres_proveedor, apellidos_proveedor, cedula_proveedor, telefono_proveedor, direccion_proveedor, email_proveedor, estado_proveedor, created_at, updated_at
+compras: EXISTE | columnas: id, codigo_compra, descripcion_compra, envio_compra, total_pesos_compra, proveedor_id, estado_compra, estado_recepcion, total_dolares_compra, importacion_compra, total_final_compra, created_at, updated_at
+compra_items: EXISTE | columnas: id, compra_id, producto_id, colores_id, talla, cantidad, stock_ingresado, costo_unitario_pesos, costo_unitario_dolares, subtotal_pesos, subtotal_dolares, estado, observacion, metadata, created_at, updated_at
+inventario_movimientos: EXISTE | columnas: id, producto_id, colores_productos_id, pedido_id, compra_id, user_id, tipo_movimiento, cantidad, stock_antes, stock_despues, motivo, metadata, created_at, updated_at, compra_item_id, compra_recepcion_id, compra_recepcion_item_id, proveedor_reclamo_reposicion_id
+compra_recepciones: EXISTE | columnas: id, compra_id, user_id, fecha_recepcion, observacion, idempotency_key, created_at, updated_at
+compra_recepcion_items: EXISTE | columnas: id, compra_recepcion_id, compra_item_id, cantidad_recibida, cantidad_aceptada, cantidad_danada, cantidad_incorrecta, cantidad_faltante_declarada, cierra_item, observacion, created_at, updated_at
+inventario_stock: NO EXISTE
+producto_imagenes: EXISTE | columnas: id, producto_id, color_id, color_nombre, color_normalizado, ruta, nombre_original, mime_type, peso_original, peso_optimizado, ancho, alto, orden, es_principal, activo, created_at, updated_at
+stock_reservas: EXISTE | columnas: id, session_id, producto_id, color_id, talla, cantidad, expires_at, metadata, created_at, updated_at
+pedidos: EXISTE | columnas: id, codigo_pedido, descripcion, clientes_id, tienda_id, subtotal_pedido, iva_pedido, descuentos_pedido, total_pedido, estado_url, estado_pedido, estado_pago, estado_envio, confirmado_at, pagado_at, despachado_at, cancelado_at, estado_pedidos, created_at, updated_at
+detalle_pedidos: EXISTE | columnas: id, cantidad_producto, producto_id, nombre_producto_snapshot, pedido_id, id_color_producto, color_snapshot, talla_por_color, talla_snapshot, precio_unitario_snapshot, subtotal_linea, descuento_linea, impuesto_linea, estado_dtpedidos, created_at, updated_at
+ventas: EXISTE | columnas: id, pedido_id, clientes_id, tienda_id, subtotal, descuento, total, estado_venta, modalidad_venta, fecha_venta, fecha_proximo_abono, fecha_ultimo_abono, created_at, updated_at
+Hallazgos de existencia: inventario_stock no existe; el stock operativo está en productos.stock_venta_producto y colores_productos.stock_por_color. stock_reservas existe y actualmente tiene 0 filas. producto_imagenes existe y actualmente tiene 0 filas.
+Campos de precio reales: productos.precio_dolares_producto, precio_pesos_producto, precio_venta_producto, precio_promocional, promocion_activa; compra_items.costo_unitario_dolares y subtotal_dolares.
+
+C. LÍNEA GYMSHARK
+Encontrada: id 1 | nombre real: GymShark | código: no existe columna de código en lineas_ropa | estado: 1.
+Recomendación: reutilizar id 1; no crear GYMSHARK/Gymshark adicional. Categorías actuales asociadas a esta línea: 0. Productos actuales asociados indirectamente a esta línea: no hay productos GymShark identificables.
+
+D. PROVEEDORES ENCONTRADOS Y RECOMENDACIÓN
+id 1: Proveedor 1 | datos: tienda_proveedor=Proveedor 1; nombres_proveedor=Proveedor; apellidos_proveedor=1; telefono_proveedor=NULL; email_proveedor=NULL; estado_proveedor=1
+id 3: Proveedor Línea Americana | datos: tienda_proveedor=Proveedor Línea Americana; nombres_proveedor=Proveedor; apellidos_proveedor=Línea Americana; telefono_proveedor=NULL; email_proveedor=NULL; estado_proveedor=1
+id 4: Proveedor Lote Mixto BootyFitness | datos: tienda_proveedor=Proveedor Lote Mixto BootyFitness; nombres_proveedor=Proveedor; apellidos_proveedor=Lote Mixto; telefono_proveedor=NULL; email_proveedor=NULL; estado_proveedor=1
+id 5: Proveedor Línea Brasileña | datos: tienda_proveedor=Proveedor Línea Brasileña; nombres_proveedor=Proveedor; apellidos_proveedor=Línea Brasileña; telefono_proveedor=NULL; email_proveedor=NULL; estado_proveedor=1
+Proveedores relevantes encontrados: 4; coincidencia Gymshark Oficial: 0.
+Recomendado: crear posteriormente un proveedor con tienda_proveedor='Gymshark Oficial' y completar los campos NOT NULL nombres_proveedor, apellidos_proveedor y estado_proveedor. No usar automáticamente Proveedor 1, Proveedor Línea Americana, Proveedor Lote Mixto BootyFitness ni Proveedor Línea Brasileña.
+
+E. CATEGORÍAS EXISTENTES, FALTANTES Y POSIBLES DUPLICADOS
+Categorías distintas en Excel: 19. Categorías existentes bajo GymShark: 0. Categorías finales a crear: 19.
+Lista final de categorías del Excel, todas con acción CREAR_BAJO_LINEA_GYMSHARK:
+1. SHORTS
+2. TOPS / SPORTS BRA
+3. T-SHIRTS
+4. HOODIES
+5. ACCESORIOS / MEDIAS
+6. SWEATSHIRTS / CREW
+7. LEGGINGS
+8. TOPS / TANK
+9. ENTERIZOS / ALL-IN-ONE
+10. JOGGERS / PANTS
+11. PANTS
+12. ACCESORIOS / BOLSOS
+13. ACCESORIOS / HEADBANDS
+14. ACCESORIOS / STRAPS
+15. ACCESORIOS / VISERAS
+16. ACCESORIOS / BELT
+17. ACCESORIOS / BOTELLAS
+18. SWEATSHIRTS / PULLOVER
+19. TOPS / CROP
+Las categorías existentes en base (21) pertenecen a otras líneas o no son coincidencias exactas; no se reutilizan. Duplicados exactos dentro del Excel: ninguno.
+Posibles ambigüedades: conservar literalmente las categorías con jerarquía separada por '/', en mayúsculas, sin convertir plural/singular ni sustituir por nombres de otras líneas.
+
+F. COLORES EXISTENTES, FALTANTES Y POSIBLES DUPLICADOS
+Colores distintos en Excel: 60; compuestos con '/': 25; coincidencias exactas por nombre en tabla colores: 0; colores a crear: 60.
+HEX sugeridos y estado por nombre (detalle completo también en auditoria_gymshark_colores_final.csv):
+1. Black | HEX #000000 | simple | FALTANTE
+2. White | HEX #FFFFFF | simple | FALTANTE
+3. Charcoal Grey Marl | HEX #36454F | simple | FALTANTE
+4. Heavy Blue | HEX #1F4E79 | simple | FALTANTE
+5. Butter Yellow | HEX #F3E5AB | simple | FALTANTE
+6. White/Light Grey Core Marl/Black | HEX #FFFFFF | compuesto; dominante White | FALTANTE
+7. Ecru Brown/Acid Wash Small Ball | HEX #D8C3A5 | compuesto; dominante Ecru Brown | FALTANTE
+8. Classic Blue | HEX #2563EB | simple | FALTANTE
+9. Success Blue | HEX #1F4E79 | simple | FALTANTE
+10. Weighted Purple/Metal Purple | HEX #6F2DA8 | compuesto; dominante Weighted Purple | FALTANTE
+11. Celeste Blue/Marl | HEX #87CEEB | compuesto; dominante Celeste Blue | FALTANTE
+12. Indigo Purple | HEX #800080 | simple | FALTANTE
+13. Electric Pink | HEX #FF1493 | simple | FALTANTE
+14. Iron Blue | HEX #466B8A | simple | FALTANTE
+15. Classic Green | HEX #2E8B57 | simple | FALTANTE
+16. Asphalt Grey/Black | HEX #575757 | compuesto; dominante Asphalt Grey | FALTANTE
+17. Plum Brown | HEX #A67B5B | simple | FALTANTE
+18. Darkest Teal/Functional Teal | HEX #014D4E | compuesto; dominante Darkest Teal | FALTANTE
+19. Carmine Red/Wash | HEX #960018 | compuesto; dominante Carmine Red | FALTANTE
+20. Bold Orange | HEX #FF8C00 | simple | FALTANTE
+21. Energy Gelato Green | HEX #2E8B57 | simple | FALTANTE
+22. Winning Pink/Sour Pink | HEX #FF69B4 | compuesto; dominante Winning Pink | FALTANTE
+23. Darkest Teal | HEX #014D4E | simple | FALTANTE
+24. Physical Pink | HEX #FFC0CB | simple | FALTANTE
+25. Heritage Brown | HEX #A67B5B | simple | FALTANTE
+26. Moss Olive/Core Olive | HEX #808000 | compuesto; dominante Moss Olive | FALTANTE
+27. Asphalt Grey/Black/Spray Dye | HEX #575757 | compuesto; dominante Asphalt Grey | FALTANTE
+28. Dusk Purple/Wash | HEX #6A0DAD | compuesto; dominante Dusk Purple | FALTANTE
+29. Steady Purple | HEX #800080 | simple | FALTANTE
+30. Black/Asphalt Grey | HEX #000000 | compuesto; dominante Black | FALTANTE
+31. Electric Pink/Sorbet Yellow | HEX #FF1493 | compuesto; dominante Electric Pink | FALTANTE
+32. Cherry Purple/Reset Pink | HEX #8E4585 | compuesto; dominante Cherry Purple | FALTANTE
+33. Tinted White/Cherry Purple | HEX #F2F2F0 | compuesto; dominante Tinted White | FALTANTE
+34. Black/Tinted White | HEX #000000 | compuesto; dominante Black | FALTANTE
+35. Super-Set Pink | HEX #FF5A8A | simple | FALTANTE
+36. Force Blue/Steady Purple | HEX #4169E1 | compuesto; dominante Force Blue | FALTANTE
+37. Focus Pink/Tinted White | HEX #F4A6C7 | compuesto; dominante Focus Pink | FALTANTE
+38. Black/Smokey Grey | HEX #000000 | compuesto; dominante Black | FALTANTE
+39. Cherry Purple/Wash | HEX #8E4585 | compuesto; dominante Cherry Purple | FALTANTE
+40. Strength Pink | HEX #FFC0CB | simple | FALTANTE
+41. Carmine Red | HEX #960018 | simple | FALTANTE
+42. Chilled Blue | HEX #60A5FA | simple | FALTANTE
+43. Reset Pink | HEX #FF7F8A | simple | FALTANTE
+44. Stone Beige | HEX #D8C3A5 | simple | FALTANTE
+45. Discipline Green | HEX #2E8B57 | simple | FALTANTE
+46. Super-Set Pink/Focus Pink | HEX #FF5A8A | compuesto; dominante Super-Set Pink | FALTANTE
+47. Black/Focus Pink | HEX #000000 | compuesto; dominante Black | FALTANTE
+48. Conditioning Red | HEX #C62828 | simple | FALTANTE
+49. Force Blue | HEX #4169E1 | simple | FALTANTE
+50. Calm Pink | HEX #FFC0CB | simple | FALTANTE
+51. Tinted White | HEX #F2F2F0 | simple | FALTANTE
+52. Soft White | HEX #FFFFFF | simple | FALTANTE
+53. Pebble Grey | HEX #808080 | simple | FALTANTE
+54. Black/Conditioning Red | HEX #000000 | compuesto; dominante Black | FALTANTE
+55. Athletic Red | HEX #EA1515 | simple | FALTANTE
+56. White/Black | HEX #FFFFFF | compuesto; dominante White | FALTANTE
+57. Poise Pink | HEX #F48FB1 | simple | FALTANTE
+58. Track Green | HEX #2E8B57 | simple | FALTANTE
+59. Rich Maroon/Marl | HEX #800000 | compuesto; dominante Rich Maroon | FALTANTE
+60. Black Marl | HEX #000000 | simple | FALTANTE
+La tabla colores tiene 121 registros. Duplicados exactos normalizados detectados en base: beige: IDs 12/20.
+Los colores parecidos listados en el CSV son únicamente alertas; no deben reutilizarse automáticamente. Para compuestos se usa el primer componente como color dominante, sin dividir el nombre comercial.
+
+G. PRODUCTOS EXISTENTES, SIMILARES Y NUEVOS
+Nombres de producto en Excel: 69. Productos exactos ya existentes: 0. Grupos de productos similares genéricos identificados: 52 de 75; no se reutilizan automáticamente. Productos finales nuevos: 75.
+Se detectaron 6 nombres con más de un costo visible: Adapt Fleck Seamless Leggings | Adapt Fleck Seamless Shorts | Power Washed Joggers | Diffuse Logo Headband | Comfy Rest Day Socks | Medium Support Running Sports Bra. La separación aplicada es por costo USD en el nombre final.
+1. Lifting Essentials Graphic Brushed 4' Shorts | categoría SHORTS | USD 10.20 visible -> USD 12.66 prorrateado | 2 variantes / 2 piezas
+2. Asymmetric Sports Bra | categoría TOPS / SPORTS BRA | USD 9.60 visible -> USD 11.91 prorrateado | 2 variantes / 2 piezas
+3. FLEX SHORTS | categoría SHORTS | USD 10.50 visible -> USD 13.03 prorrateado | 1 variantes / 1 piezas
+4. Varsity Graphic Oversized T-shirt | categoría T-SHIRTS | USD 12.00 visible -> USD 14.89 prorrateado | 1 variantes / 1 piezas
+5. Strength Department Oversized Hoodie | categoría HOODIES | USD 21.00 visible -> USD 26.06 prorrateado | 1 variantes / 1 piezas
+6. Legacy Cotton Shorts | categoría SHORTS | USD 13.20 visible -> USD 16.38 prorrateado | 2 variantes / 2 piezas
+7. Everyday Seamless Shorts | categoría SHORTS | USD 28.00 visible -> USD 34.75 prorrateado | 7 variantes / 14 piezas
+8. Everyday Seamless Racerback Sports Bra | categoría TOPS / SPORTS BRA | USD 26.00 visible -> USD 32.27 prorrateado | 1 variantes / 1 piezas
+9. Crew Socks 6pk | categoría ACCESORIOS / MEDIAS | USD 19.80 visible -> USD 24.57 prorrateado | 1 variantes / 2 piezas
+10. Power Washed Crew | categoría SWEATSHIRTS / CREW | USD 16.80 visible -> USD 20.85 prorrateado | 3 variantes / 3 piezas
+11. Mesh Oversized T-Shirt | categoría T-SHIRTS | USD 23.00 visible -> USD 28.55 prorrateado | 1 variantes / 1 piezas
+12. Legacy Bra | categoría TOPS / SPORTS BRA | USD 9.00 visible -> USD 11.17 prorrateado | 1 variantes / 1 piezas
+13. Legacy Logo Leggings | categoría LEGGINGS | USD 16.20 visible -> USD 20.11 prorrateado | 1 variantes / 1 piezas
+14. Legacy Tall Leggings | categoría LEGGINGS | USD 16.20 visible -> USD 20.11 prorrateado | 1 variantes / 1 piezas
+15. Adapt Fleck Seamless Leggings (Costo USD 18.00) | categoría LEGGINGS | USD 18.00 visible -> USD 22.34 prorrateado | 2 variantes / 2 piezas
+16. Vital Regular Leggings | categoría LEGGINGS | USD 16.20 visible -> USD 20.11 prorrateado | 2 variantes / 2 piezas
+17. Legacy Logo Tight Shorts | categoría SHORTS | USD 12.00 visible -> USD 14.89 prorrateado | 1 variantes / 1 piezas
+18. Contour Stitch Tank with Shelf | categoría TOPS / TANK | USD 11.40 visible -> USD 14.15 prorrateado | 2 variantes / 2 piezas
+19. Woven Shorts | categoría SHORTS | USD 13.60 visible -> USD 16.88 prorrateado | 4 variantes / 4 piezas
+20. Lifting Dipped Waistband All-In-One | categoría ENTERIZOS / ALL-IN-ONE | USD 19.20 visible -> USD 23.83 prorrateado | 3 variantes / 3 piezas
+21. Whitney Regular Legging | categoría LEGGINGS | USD 15.00 visible -> USD 18.62 prorrateado | 1 variantes / 1 piezas
+22. Adapt Camo Seamless Leggings | categoría LEGGINGS | USD 18.00 visible -> USD 22.34 prorrateado | 2 variantes / 2 piezas
+23. Crossover Leggings | categoría LEGGINGS | USD 15.00 visible -> USD 18.62 prorrateado | 1 variantes / 1 piezas
+24. Adapt Fleck Seamless Shorts (Costo USD 13.20) | categoría SHORTS | USD 13.20 visible -> USD 16.38 prorrateado | 1 variantes / 1 piezas
+25. Gains Seamless Washed Short | categoría SHORTS | USD 12.00 visible -> USD 14.89 prorrateado | 1 variantes / 1 piezas
+26. Lift Seamless High-Rise Leggings | categoría LEGGINGS | USD 18.00 visible -> USD 22.34 prorrateado | 1 variantes / 1 piezas
+27. Halter Neck Cami with Shelf | categoría TOPS / TANK | USD 11.40 visible -> USD 14.15 prorrateado | 1 variantes / 1 piezas
+28. Lifting Pocket Shorts | categoría SHORTS | USD 12.60 visible -> USD 15.64 prorrateado | 1 variantes / 1 piezas
+29. Lifting Club Mesh 5" Shorts | categoría SHORTS | USD 12.00 visible -> USD 14.89 prorrateado | 1 variantes / 1 piezas
+30. Fleece Shorts | categoría SHORTS | USD 16.20 visible -> USD 20.11 prorrateado | 2 variantes / 2 piezas
+31. Gains Washed Heavyweight Cotton T-Shirt | categoría T-SHIRTS | USD 12.00 visible -> USD 14.89 prorrateado | 1 variantes / 1 piezas
+32. Locked In Graphic Jogger | categoría JOGGERS / PANTS | USD 30.80 visible -> USD 38.23 prorrateado | 1 variantes / 1 piezas
+33. Everyday Seamless Shelf Tank | categoría TOPS / TANK | USD 30.00 visible -> USD 37.23 prorrateado | 2 variantes / 2 piezas
+34. Power Washed Joggers (Costo USD 22.40) | categoría JOGGERS / PANTS | USD 22.40 visible -> USD 27.80 prorrateado | 3 variantes / 6 piezas
+35. Shelf Cami Tank | categoría TOPS / TANK | USD 19.00 visible -> USD 23.58 prorrateado | 2 variantes / 2 piezas
+36. Adapt Animal Leggings | categoría LEGGINGS | USD 24.00 visible -> USD 29.79 prorrateado | 5 variantes / 8 piezas
+37. To From Pants | categoría PANTS | USD 22.40 visible -> USD 27.80 prorrateado | 4 variantes / 5 piezas
+38. Relay Seamless Midi Tank | categoría TOPS / TANK | USD 23.00 visible -> USD 28.55 prorrateado | 2 variantes / 4 piezas
+39. Lightweight Tricot Wide Leg Pants | categoría PANTS | USD 24.00 visible -> USD 29.79 prorrateado | 4 variantes / 8 piezas
+40. Halter Bralette | categoría TOPS / SPORTS BRA | USD 22.00 visible -> USD 27.30 prorrateado | 2 variantes / 4 piezas
+41. Everyday Seamless Ribbed Tank | categoría TOPS / TANK | USD 14.00 visible -> USD 17.38 prorrateado | 3 variantes / 5 piezas
+42. Adapt Fleck Seamless Shorts (Costo USD 17.60) | categoría SHORTS | USD 17.60 visible -> USD 21.84 prorrateado | 5 variantes / 9 piezas
+43. Light Support Minimal Halterneck Bra | categoría TOPS / SPORTS BRA | USD 15.00 visible -> USD 18.62 prorrateado | 2 variantes / 4 piezas
+44. Power Washed Joggers (Costo USD 28.00) | categoría JOGGERS / PANTS | USD 28.00 visible -> USD 34.75 prorrateado | 3 variantes / 6 piezas
+45. Adapt Fleck Seamless Leggings (Costo USD 24.00) | categoría LEGGINGS | USD 24.00 visible -> USD 29.79 prorrateado | 4 variantes / 8 piezas
+46. Everyday Holdall Small | categoría ACCESORIOS / BOLSOS | USD 26.40 visible -> USD 32.77 prorrateado | 1 variantes / 4 piezas
+47. Diffuse Logo Headband (Costo USD 12.00) | categoría ACCESORIOS / HEADBANDS | USD 12.00 visible -> USD 14.89 prorrateado | 1 variantes / 2 piezas
+48. Diffuse Logo Headband (Costo USD 10.00) | categoría ACCESORIOS / HEADBANDS | USD 10.00 visible -> USD 12.41 prorrateado | 1 variantes / 2 piezas
+49. Comfy Rest Day Socks (Costo USD 4.20) | categoría ACCESORIOS / MEDIAS | USD 4.20 visible -> USD 5.21 prorrateado | 2 variantes / 4 piezas
+50. Cut Out Bandeau | categoría TOPS / SPORTS BRA | USD 9.00 visible -> USD 11.17 prorrateado | 1 variantes / 2 piezas
+51. Silicone Lifting Straps | categoría ACCESORIOS / STRAPS | USD 10.00 visible -> USD 12.41 prorrateado | 1 variantes / 2 piezas
+52. Visor | categoría ACCESORIOS / VISERAS | USD 15.00 visible -> USD 18.62 prorrateado | 1 variantes / 2 piezas
+53. Adapt Animal Shorts | categoría SHORTS | USD 17.60 visible -> USD 21.84 prorrateado | 2 variantes / 3 piezas
+54. Medium Support Running Sports Bra (Costo USD 22.00) | categoría TOPS / SPORTS BRA | USD 22.00 visible -> USD 27.30 prorrateado | 1 variantes / 2 piezas
+55. Velcro Weightlifting Belt | categoría ACCESORIOS / BELT | USD 22.00 visible -> USD 27.30 prorrateado | 1 variantes / 2 piezas
+56. Adapt Fleck Halterneck Sports Bra | categoría TOPS / SPORTS BRA | USD 18.40 visible -> USD 22.84 prorrateado | 1 variantes / 1 piezas
+57. Power T-Shirt | categoría T-SHIRTS | USD 18.00 visible -> USD 22.34 prorrateado | 2 variantes / 4 piezas
+58. Accent Conditioning Shorts | categoría SHORTS | USD 18.00 visible -> USD 22.34 prorrateado | 9 variantes / 18 piezas
+59. Diffuse Sweat Headband | categoría ACCESORIOS / HEADBANDS | USD 10.00 visible -> USD 12.41 prorrateado | 1 variantes / 2 piezas
+60. Lucky Graphic Silicone Lifting Straps | categoría ACCESORIOS / STRAPS | USD 13.20 visible -> USD 16.38 prorrateado | 1 variantes / 2 piezas
+61. 1L Water Bottle | categoría ACCESORIOS / BOTELLAS | USD 5.60 visible -> USD 6.95 prorrateado | 1 variantes / 3 piezas
+62. Comfy Rest Day Socks (Costo USD 7.00) | categoría ACCESORIOS / MEDIAS | USD 7.00 visible -> USD 8.69 prorrateado | 4 variantes / 6 piezas
+63. Lifting Mesh 5" Shorts | categoría SHORTS | USD 20.00 visible -> USD 24.82 prorrateado | 2 variantes / 4 piezas
+64. Adapt Animal Tank Top with Shelf | categoría TOPS / TANK | USD 19.00 visible -> USD 23.58 prorrateado | 5 variantes / 5 piezas
+65. Adapt Animal Sports Bra | categoría TOPS / SPORTS BRA | USD 22.00 visible -> USD 27.30 prorrateado | 3 variantes / 3 piezas
+66. Minimal Sports Bra | categoría TOPS / SPORTS BRA | USD 15.00 visible -> USD 18.62 prorrateado | 1 variantes / 1 piezas
+67. Cotton Blend Racerback Sports Bra | categoría TOPS / SPORTS BRA | USD 15.00 visible -> USD 18.62 prorrateado | 1 variantes / 1 piezas
+68. Apres Lift Graphic Crew Sock Single | categoría ACCESORIOS / MEDIAS | USD 8.00 visible -> USD 9.93 prorrateado | 1 variantes / 2 piezas
+69. Running Graphic Crew Socks 2pk | categoría ACCESORIOS / MEDIAS | USD 12.00 visible -> USD 14.89 prorrateado | 1 variantes / 2 piezas
+70. Minimal Sports Bra 2.0 | categoría TOPS / SPORTS BRA | USD 24.00 visible -> USD 29.79 prorrateado | 2 variantes / 2 piezas
+71. Training Shelf Cami Tank | categoría TOPS / TANK | USD 22.40 visible -> USD 27.80 prorrateado | 2 variantes / 2 piezas
+72. Vital Seamless Midi Zip 2.0 Pullover | categoría SWEATSHIRTS / PULLOVER | USD 22.40 visible -> USD 27.80 prorrateado | 2 variantes / 4 piezas
+73. Vital Crop Top | categoría TOPS / CROP | USD 11.40 visible -> USD 14.15 prorrateado | 1 variantes / 2 piezas
+74. Ruched Sports Bra | categoría TOPS / SPORTS BRA | USD 12.00 visible -> USD 14.89 prorrateado | 2 variantes / 4 piezas
+75. Medium Support Running Sports Bra (Costo USD 26.40) | categoría TOPS / SPORTS BRA | USD 26.40 visible -> USD 32.77 prorrateado | 2 variantes / 4 piezas
+Duplicados de nombre en productos existentes que requieren cautela: ENTERIZO ICONIC SILUETA PROMO: id 5, USD 14.50 / id 6, USD 18.00.
+
+H. REGLAS REALES DE VARIANTES Y STOCK
+El Excel se transforma en 150 variantes: producto final + color + talla + cantidad. Como no hay productos GymShark existentes, variantes exactas reutilizables: 0; variantes nuevas previstas: 150.
+La tabla colores_productos exige producto_id, colores_id, cantidad_por_color, stock_por_color y talla_por_color; tiene una unicidad existente por producto/color/talla según la estructura auditada. Compra_items registra cantidad, stock_ingresado, costos y subtotales.
+Tallas del Excel: S, XS, M, XXL, L, One Size. No se detectaron tallas compuestas en las filas útiles. No se divide ninguna cantidad; si aparecieran expresiones XS y S, S y M, M y L o XS y S y M, se normalizarían a XS-S, S-M, M-L o XS-S-M respectivamente.
+El stock vendible de producto y el stock por color deben quedar en 0 mientras la compra esté EN_TRANSITO. No existe tabla inventario_stock; el stock reservado se gestiona en stock_reservas, actualmente sin filas.
+
+I. REGLAS REALES DE COMPRA EN TRÁNSITO Y RECEPCIÓN
+El controlador de compras fuerza compras.estado_recepcion a EN_TRANSITO. Los estados observados/soportados en el servicio son EN_TRANSITO, RECEPCION_PARCIAL, RECIBIDA y CON_INCIDENCIAS; la base no usa un CHECK que los limite.
+En tránsito: registrar compra, productos y variantes; stock_venta_producto=0; colores_productos.stock_por_color=0; compra_items.stock_ingresado=0; no crear inventario_movimientos tipo ENTRADA_COMPRA.
+En recepción física: compra_recepciones y compra_recepcion_items documentan cantidades recibidas/aceptadas/dañadas/incorrectas/faltantes; el servicio actualiza stock ingresado, stock de variante y stock de producto y registra ENTRADA_COMPRA vinculada a la recepción.
+Estado actual histórico: [{"estado_recepcion":"RECIBIDA","cantidad":28}]; movimientos: [{"tipo_movimiento":"ENTRADA_COMPRA","cantidad":159},{"tipo_movimiento":"SALIDA_VENTA","cantidad":1}]. Las 160 filas existentes incluyen entradas históricas, por lo que no deben tomarse como patrón para una compra nueva en tránsito.
+
+J. REGLAS REALES DE PUBLICACIÓN ECOMMERCE
+productos.publicado_ecommerce es NOT NULL con default 0. El alcance ecommerce filtra estado_producto activo y publicado_ecommerce verdadero; no hay una tabla separada de publicación.
+Para esta compra: estado_producto=1, publicado_ecommerce=0, stock_venta_producto=0, sin producto_imagenes y sin imagen inicial. Riesgo operativo: ProductoController@store valida un archivo imagen como requerido aunque imagen_producto sea nullable; debe definirse una vía de alta que soporte producto sin imagen.
+
+K. REGLAS REALES DE PRECIOS
+Total visible calculado desde las filas útiles: USD 4238.90. Importación: USD 1022.00. Total final: USD 5260.90. Factor: 1.241100285.
+El precio visible/unitario estimado del Excel se usa como costo de compra USD. El costo prorrateado unitario es costo visible × factor; se carga conceptualmente en productos.precio_dolares_producto y compra_items.costo_unitario_dolares.
+precio_venta_producto debe quedar 0; precio_promocional NULL; promocion_activa 0. precio_pesos_producto es NOT NULL con default 0 y requiere confirmación de dejarlo en 0 por tratarse de una compra USD.
+Los campos de compra tienen DECIMAL(12,2) para costo/subtotal. Al redondear cada costo unitario a 2 decimales, la suma queda USD 5260.96; diferencia de redondeo contra total final: USD 0.06. Requiere criterio de ajuste antes de insertar.
+
+L. DUPLICADOS DETECTADOS EN EL EXCEL
+La hoja Duplicados_detectados existe y contiene 5 filas. Se mantienen omitidas y no se agregan a las 150 filas útiles.
+1. Legacy Bra | Classic Blue | S | qty 1 | IMG07 | Ya existía en la tanda anterior
+2. Contour Stitch Tank with Shelf | Heavy Blue | S | qty 1 | IMG09 | Ya existía en la tanda anterior
+3. Contour Stitch Tank with Shelf | Heavy Blue | M | qty 1 | IMG09 | Ya existía en la tanda anterior
+4. Minimal Sports Bra 2.0 | Poise Pink | M | qty 1 | IMG23 | Ya estaba agregado desde IMG19
+5. Minimal Sports Bra 2.0 | Poise Pink | S | qty 1 | IMG24 | Ya estaba agregado desde IMG23
+En la hoja principal hay claves variante repetidas: ninguna. Observación de solape adicional en filas útiles: 1.
+
+M. RIESGOS ANTES DE INSERTAR
+[ALTO] PROVEEDOR — Proveedor Gymshark Oficial inexistente. No existe un proveedor cuyo nombre contenga Gymshark; compras.proveedor_id es NOT NULL. Acción: Crear o registrar el proveedor confirmado antes de insertar la compra; no usar proveedores genéricos automáticamente.
+[ALTO] CATEGORIAS — 19 categorías no existen bajo GymShark. Las 19 categorías del Excel no tienen asociación actual con la línea id 1; existen categorías en otras líneas. Acción: Crear exactamente bajo GymShark y no reutilizar Línea Americana/Brasileña.
+[ALTO] COLORES — 60 colores comerciales faltantes. Hay 25 colores compuestos con barra; no hay que separarlos. Colores parecidos de la tabla no son coincidencias exactas. Acción: Crear solo los faltantes con un HEX sugerido por componente dominante; revisar visualmente antes de cargar.
+[ALTO] IMAGENES — La ruta HTTP de alta de producto exige imagen. productos.imagen_producto permite NULL y producto_imagenes está vacío, pero ProductoController@store valida imagen como requerida. Acción: Definir la vía técnica para alta sin imagen antes de insertar; no cargar producto_imagenes en esta etapa.
+[MEDIO] PRODUCTOS — 6 nombres tienen costos visibles distintos. La separación por costo aumenta 69 nombres del Excel a 75 productos finales. Acción: Usar los nombres diferenciadores indicados en el CSV de productos.
+[MEDIO] PRORRATEO — El costo prorrateado puede exceder 2 decimales. Factor 1.241100285; compra_items.costo_unitario_dolares y subtotal_dolares son DECIMAL(12,2). La suma redondeada por unidad queda USD 5260.96, diferencia 0.06 frente a USD 5260.90. Acción: Definir ajuste de redondeo para que los subtotales de items reconcilien exactamente el total de compra.
+[MEDIO] DATOS_OBLIGATORIOS — Campos NOT NULL adicionales. productos exige código, descripción, cantidad_compra_producto, precio_pesos_producto, precio_dolares_producto, precio_venta_producto, compras_id; colores_productos exige color, talla, cantidad y stock. Acción: Confirmar patrón de código y valor de precio_pesos_producto en 0 por compra USD.
+[MEDIO] DUPLICADOS — 5 filas marcadas como duplicados por solape. La hoja Duplicados_detectados las identifica como repetidas de tandas anteriores; no aparecen como unidades adicionales del consolidado útil. Acción: Mantenerlas omitidas; no sumarlas.
+[INFO] TALLAS — Hay tallas One Size y XXL. Las tallas útiles son L, M, One Size, S, XS y XXL; no hay tallas compuestas preformadas en las 150 filas. Acción: Conservar tallas literales; aplicar regla XS-S/S-M/M-L solo si una futura fila viene expresada con varias tallas.
+[INFO] STOCK — Compra en tránsito no debe afectar inventario. El flujo actual mantiene stock físico/vendible en cero y difiere ENTRADA_COMPRA hasta la recepción. Acción: Registrar compra, productos, variantes y compra_items con stock 0; no crear movimientos.
+[INFO] TOTALES — Totales del Excel reconcilian. 150 variantes, 229 piezas y USD 4238.90 visibles; con USD 1022.00 de importación resulta USD 5260.90. Acción: Usar estos totales como control previo y posterior.
+
+N. PREGUNTAS PENDIENTES PARA EL USUARIO
+1. ¿Se confirma crear el proveedor Gymshark Oficial con nombres/apellidos mínimos y estado activo antes de la carga?
+2. ¿Se confirma el patrón de codigo_producto para los 75 productos finales?
+3. ¿Se confirma dejar precio_pesos_producto=0 por estar toda la compra en USD?
+4. ¿Qué regla de redondeo se usará para absorber la diferencia de USD 0.06 y reconciliar compra_items con total_final_compra?
+5. ¿Se autoriza una vía de alta sin imagen, dado que el controlador HTTP actual exige imagen aunque la columna sea nullable?
+6. ¿Se confirma que los HEX sugeridos son solo valores iniciales y que no se reutilizarán colores parecidos por traducción/familia?
+
+O. RECOMENDACIÓN TÉCNICA DE CARGA
+1) Crear/confirmar proveedor Gymshark Oficial; 2) crear únicamente categorías faltantes bajo línea id 1; 3) crear únicamente colores faltantes manteniendo compuestos; 4) crear los 75 productos finales con separación por costo; 5) crear 150 variantes y compra_items con los datos del CSV; 6) registrar compra CMP-GYMSHARK-20261007-01 en EN_TRANSITO con importación 1022 y total final calculado; 7) dejar todo stock/publicación en cero; 8) no insertar imágenes ni movimientos hasta recepción física; 9) validar totales y restricciones NOT NULL antes de ejecutar cualquier carga.
+Detalle tabular generado en los cinco CSV entregables. No se generó SQL de inserción.

@@ -28,6 +28,22 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('payphone-tool.generate', function (Request $request) {
+            $ip = $request->ip() ?: 'unknown';
+            $sessionId = $request->session()->getId() ?: 'unknown';
+            $perMinute = max(1, (int) config('payments.payphone.tool.links_per_minute', 10));
+            $perHour = max(1, (int) config('payments.payphone.tool.links_per_hour', 60));
+            $globalPerMinute = min(20, $perMinute);
+
+            return [
+                Limit::perMinute($perMinute)->by('payphone-tool:generate:minute:ip:' . $ip),
+                Limit::perMinute($perMinute)->by('payphone-tool:generate:minute:session:' . $sessionId),
+                Limit::perHour($perHour)->by('payphone-tool:generate:hour:ip:' . $ip),
+                Limit::perHour($perHour)->by('payphone-tool:generate:hour:session:' . $sessionId),
+                Limit::perMinute($globalPerMinute)->by('payphone-tool:generate:minute:global'),
+            ];
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

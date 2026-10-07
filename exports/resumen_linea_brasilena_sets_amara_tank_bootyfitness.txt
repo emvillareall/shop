@@ -1,0 +1,39 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_sets_amara_tank_20260904
+
+INTERPRETACION
+- Producto: SETS AMARA TANK
+- Linea: linea_brasilena
+- Categoria: CONJUNTOS
+- Negro / XS-S: 2 piezas
+- Azul marino / XS-S: 1 pieza
+- Cereza / XS-S: 1 pieza
+- Gris / XS-S: 1 pieza
+- Tallas compuestas detectadas: XS-S.
+- No se detectaron ambiguedades.
+
+PRECIOS
+- Costo unitario: USD 25.00.
+- Precio unitario de venta: USD 33.00.
+
+RESULTADOS ESPERADOS
+- Variantes: 4.
+- Piezas: 5.
+- Costo total: USD 125.00.
+- Venta estimada: USD 165.00.
+- Utilidad bruta: USD 40.00.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_sets_amara_tank_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_sets_amara_tank_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: SETS AMARA TANK (ID 22).
+- Variantes: 4.
+- Piezas: 5.
+- Costo total: USD 125.00.
+- Venta estimada: USD 165.00.
+- Utilidad bruta: USD 40.00.
+- Validador: OK.

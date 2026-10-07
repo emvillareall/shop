@@ -1,0 +1,45 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_dry_jackets_contour_zip_20260904
+
+INTERPRETACION
+- Producto: DRY JACKETS CONTOUR ZIP
+- Linea: linea_brasilena
+- Categoria: CHAQUETAS
+- Negro / XS: 1 pieza
+- Negro / S-M: 2 piezas
+- Negro / L: 2 piezas
+- Amarillo / XS-S: 2 piezas
+- Amarillo / M: 2 piezas
+- Amarillo / L: 2 piezas
+- Vainilla / XS-S: 2 piezas
+- Vainilla / M: 2 piezas
+- Vainilla / L: 1 pieza
+- Azul marino / S-M: 2 piezas
+- Tallas compuestas detectadas: S-M y XS-S.
+- No se detectaron ambiguedades.
+
+PRECIOS
+- Costo unitario: USD 16.00.
+- Precio unitario de venta: USD 38.00.
+
+RESULTADOS ESPERADOS
+- Variantes: 10.
+- Piezas: 18.
+- Costo total: USD 288.00.
+- Venta estimada: USD 684.00.
+- Utilidad bruta: USD 396.00.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_dry_jackets_contour_zip_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_dry_jackets_contour_zip_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: DRY JACKETS CONTOUR ZIP (ID 16).
+- Variantes: 10.
+- Piezas: 18.
+- Costo total: USD 288.00.
+- Venta estimada: USD 684.00.
+- Utilidad bruta: USD 396.00.
+- Validador: OK.

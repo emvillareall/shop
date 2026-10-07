@@ -462,6 +462,7 @@
             agregarSeleccionActual() {
                 const seleccion = this.variantes.filter((item) => this.getCantidad(item) > 0).map((item) => ({
                     producto_id: Number(this.productoId),
+                    variante_id: Number(item.variante_id),
                     producto_nombre: this.productosMap?.[String(this.productoId)]?.nombre || `Producto #${this.productoId}`,
                     colores_id: Number(item.colores_id),
                     nombre_color: item.nombre_color,

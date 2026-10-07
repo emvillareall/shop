@@ -1,0 +1,40 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_amara_luxe_sport_bra_20260904
+
+INTERPRETACION
+- Producto: AMARA LUXE SPORT BRA PROMO
+- Linea: linea_brasilena
+- Categoria: TOP
+- Negro / XS-S-M: 4 piezas
+- Azul marino / XS-S-M: 3 piezas
+- Rojo / XS-S-M: 2 piezas
+- Gris / XS-S-M: 1 pieza
+- Tallas compuestas detectadas: XS-S-M.
+- No se detectaron ambiguedades.
+
+PRECIOS
+- Costo unitario: USD 7.00.
+- Precio unitario de venta: USD 18.00.
+- Etiqueta conservada: PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 4.
+- Piezas: 10.
+- Costo total: USD 70.00.
+- Venta estimada: USD 180.00.
+- Utilidad bruta: USD 110.00.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_amara_luxe_sport_bra_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_amara_luxe_sport_bra_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: AMARA LUXE SPORT BRA PROMO (ID 19).
+- Variantes: 4.
+- Piezas: 10.
+- Costo total: USD 70.00.
+- Venta estimada: USD 180.00.
+- Utilidad bruta: USD 110.00.
+- Validador: OK.

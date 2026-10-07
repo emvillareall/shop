@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -32,6 +33,11 @@ class SecurityRoutesFeatureTest extends TestCase
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
+            $table->string('estado_user')->default('1');
+            $table->boolean('acceso_administrativo_completo')->default(false);
+            $table->boolean('puede_ver_productos')->default(false);
+            $table->boolean('puede_crear_productos')->default(false);
+            $table->boolean('puede_editar_productos')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });
@@ -70,7 +76,9 @@ class SecurityRoutesFeatureTest extends TestCase
             'name' => 'Admin',
             'email' => 'admin@example.com',
             'password' => bcrypt('secret'),
-        ]);
+        ])->refresh();
+        $user->acceso_administrativo_completo = true;
+        $user->save();
 
         $this->actingAs($user)->get('/pdf_pedidos/1')->assertRedirect();
     }

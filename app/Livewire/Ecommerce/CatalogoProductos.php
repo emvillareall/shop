@@ -112,7 +112,7 @@ class CatalogoProductos extends Component
                 'estado_producto',
                 'created_at',
             ])
-            ->where('estado_producto', 1)
+            ->visibleEcommerce()
             ->with([
                 'categoria:id,nombre_categoria,linea_ropa_id',
                 'imagenes' => fn ($q) => $q->select('id', 'producto_id', 'color_id', 'color_normalizado', 'ruta', 'orden', 'es_principal', 'activo')

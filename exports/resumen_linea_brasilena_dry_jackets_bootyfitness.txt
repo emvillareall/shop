@@ -1,0 +1,37 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_dry_jackets_20260904
+
+INTERPRETACION
+- Producto: DRY JACKETS PROMO
+- Linea: linea_brasilena
+- Categoria: CHAQUETAS
+- Vainilla / M-L: 1 pieza
+- Tallas compuestas detectadas: M-L.
+- No se detectaron ambiguedades.
+
+PRECIOS
+- Costo unitario: USD 12.00.
+- Precio unitario de venta: USD 25.00.
+- Etiqueta conservada: PROMO.
+
+RESULTADOS ESPERADOS
+- Variantes: 1.
+- Piezas: 1.
+- Costo total: USD 12.00.
+- Venta estimada: USD 25.00.
+- Utilidad bruta: USD 13.00.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_dry_jackets_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_dry_jackets_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: DRY JACKETS PROMO (ID 14).
+- Variantes: 1.
+- Piezas: 1.
+- Costo total: USD 12.00.
+- Venta estimada: USD 25.00.
+- Utilidad bruta: USD 13.00.
+- Validador: OK.

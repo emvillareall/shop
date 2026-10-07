@@ -1,0 +1,40 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_sets_amara_sport_bra_20260904
+
+INTERPRETACION
+- Producto: SETS AMARA SPORT BRA
+- Linea: linea_brasilena
+- Categoria: CONJUNTOS
+- Negro / S-M: 2 piezas
+- Rosa / S-M: 2 piezas
+- Vino / XS-S: 1 pieza
+- Vino / S-M: 1 pieza
+- Azul marino / XS-S: 1 pieza
+- Tallas compuestas detectadas: S-M y XS-S.
+- No se detectaron ambiguedades.
+
+PRECIOS
+- Costo unitario: USD 14.50.
+- Precio unitario de venta: USD 30.00.
+
+RESULTADOS ESPERADOS
+- Variantes: 5.
+- Piezas: 7.
+- Costo total: USD 101.50.
+- Venta estimada: USD 210.00.
+- Utilidad bruta: USD 108.50.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_sets_amara_sport_bra_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_sets_amara_sport_bra_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: SETS AMARA SPORT BRA (ID 20).
+- Variantes: 5.
+- Piezas: 7.
+- Costo total: USD 101.50.
+- Venta estimada: USD 210.00.
+- Utilidad bruta: USD 108.50.
+- Validador: OK.

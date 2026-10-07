@@ -1,0 +1,42 @@
+RESUMEN EJECUTIVO DE CORRECCION DE TALLAS COMPUESTAS
+BootyFitness - Base guias
+Fecha: 2026-09-04
+
+RESULTADO
+Se corrigieron correctamente los 6 productos afectados por la interpretación anterior de tallas compuestas.
+No se modificaron ventas, pedidos ni reservas.
+
+ARCHIVOS EJECUTADOS
+- exports/corregir_tallas_compuestas_bootyfitness_20260904.sql
+- exports/validar_tallas_compuestas_bootyfitness_20260904.sql
+
+PRODUCTOS CORREGIDOS
+- Halterneck Top
+- SET LOLITA FLARED PROMO
+- ENTERIZO ICONIC SILUETA PROMO
+- ENTERIZO SCULPT FLARED PROMO
+- ENTERIZO HARMONY ZIP PROMO
+- ENTERIZO THE BOLD TENIS
+
+RESULTADOS ANTES Y DESPUES
+- Variantes: 32 antes -> 20 despues. Diferencia: -12.
+- Piezas: 37 antes -> 34 despues. Diferencia: -3.
+- Costo total: USD 605.00 antes -> USD 549.00 despues. Diferencia: -USD 56.00.
+- Venta estimada: USD 1,375.00 antes -> USD 1,255.00 despues. Diferencia: -USD 120.00.
+- Utilidad bruta: USD 770.00 antes -> USD 706.00 despues. Diferencia: -USD 64.00.
+
+CORRECCIONES APLICADAS
+- Las tallas S y M se fusionaron como S-M conservando la cantidad indicada.
+- Las tallas M y L se fusionaron como M-L conservando la cantidad indicada.
+- Las tallas XS y S se fusionaron como XS-S conservando la cantidad indicada.
+- La variante uva / XS del ENTERIZO SCULPT FLARED se mantuvo intacta.
+- Se retiraron únicamente 3 piezas excedentes: 1 de SET LOLITA, 1 de SCULPT FLARED y 1 de HARMONY ZIP.
+- Se actualizaron colores_productos, compra_items, inventario_movimientos, productos y totales de compras relacionados.
+
+VALIDACION
+- Objetivos de tallas: OK.
+- Variantes origen restantes: 0.
+- Detalles de compra origen restantes: 0.
+- Ventas/pedidos afectados: 0.
+- Reservas afectadas: 0.
+- Resultado del validador: OK.

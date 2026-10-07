@@ -1,0 +1,24 @@
+RESUMEN — CARGA SQL COMPRA GYMSHARK EN TRÁNSITO
+Fecha: 2026-10-07
+Base objetivo: guias
+Compra: CMP-GYMSHARK-20261007-01
+Línea: GymShark id 1
+Proveedor: Gymshark Oficial
+Productos previstos: 75
+Variantes previstas: 150
+Piezas previstas: 229
+Total visible original: USD 4238.90
+Importación: USD 1022.00
+Total final: USD 5260.90
+Factor de prorrateo: 1.241100285
+Suma de subtotales de compra_items prevista: USD 5260.90
+Ajuste de redondeo: -0.06 USD en el último compra_item (orden 150, producto Medium Support Running Sports Bra (Costo USD 26.40), color Iron Blue, talla M); subtotal ajustado USD 65.48.
+Categorías previstas: 19
+Colores previstos/usados: 60. Debido a la restricción UNIQUE de colores.codigo_color, el SQL usa HEX únicos; 38 HEX fueron ajustados visualmente cerca del dominante porque el sugerido ya existía o se repetía.
+Duplicados omitidos: 5
+Inventario: no se insertan movimientos ENTRADA_COMPRA; stock físico/vendible queda en 0.
+Ecommerce: publicado_ecommerce=0; no se insertan imágenes.
+Precondiciones: si la compra ya existe o algún código GYM-0001..GYM-0075 ya existe, @preflight_ok=0 y las sentencias de carga quedan condicionadas, sin mezclar datos.
+TEST: correcto después de corregir los HEX únicos. El validador ejecutado dentro de la transacción reportó todos los controles obligatorios en OK; la transacción terminó en ROLLBACK.
+Estado posterior: no quedó proveedor, compra, producto, variante, item, categoría, color ni movimiento persistido por la prueba; los conteos reales quedaron sin cambios.
+APLICAR: archivo generado con COMMIT y listo para revisión; no ejecutado.

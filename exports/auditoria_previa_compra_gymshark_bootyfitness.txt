@@ -1,0 +1,466 @@
+AUDITORÍA PREVIA A COMPRA GYMSHARK - BOOTYFITNESS
+================================================
+
+Fecha de auditoría: 2026-10-07
+Base auditada: guias
+Proyecto: /var/www/bootyfitness
+Alcance: lectura y análisis exclusivamente.
+
+No se ejecutaron operaciones de escritura sobre la base. No se ejecutaron cargas,
+migraciones, scripts históricos ni scripts de corrección. El único archivo nuevo
+generado por esta auditoría es este informe.
+
+FUENTES REVISADAS
+-----------------
+- Base MySQL real `guias`, consultada mediante metadatos y consultas de lectura.
+- Código Laravel en `app/`, migraciones en `database/migrations/` y rutas.
+- Dumps: `guias.sql`, `bootyfitness.sql`, `exports/bootyfitness-estructura-2026-09-04.sql`,
+  su versión comprimida y `exports/backup_guias_antes_halterneck_top.sql`.
+- Scripts y resúmenes históricos de carga en `exports/`.
+- No se encontró ningún `.xlsx`, `.xls`, `.csv` ni `.ods` del consolidado Gymshark
+  ni una hoja de duplicados en `/var/www/bootyfitness`, `/var/www`, `/root`, `/tmp`
+  o `/var/tmp`. Por ello, toda comparación que dependa del Excel queda marcada
+  como ND (no determinable).
+
+A. RESUMEN EJECUTIVO
+--------------------
+1. La línea GymShark ya existe y está activa: `id=1`, nombre exacto `GymShark`,
+   sin columna de código. Debe reutilizarse; no falta crear la línea.
+2. No hay categorías asociadas a la línea GymShark y no hay productos asociados
+   a ella mediante la relación producto -> categoría -> línea.
+3. No existe un proveedor cuyo nombre contenga Gymshark. Hay proveedores de Línea
+   Americana, Línea Brasileña y dos registros genéricos. Ninguno debe asumirse
+   como proveedor Gymshark sin confirmación.
+4. La base real tiene flujo de compra en tránsito y recepción física. Una compra
+   nueva queda `EN_TRANSITO`; el stock físico/vendible permanece en cero y no se
+   registra `ENTRADA_COMPRA` hasta aceptar una recepción.
+5. La base usa variantes como producto + color + talla. Las tallas compuestas se
+   conservan como texto literal, por ejemplo `XS-S`, `S-M`, `M-L` y `XS-S-M`.
+6. La publicación ecommerce es independiente de la recepción: se controla con
+   `productos.publicado_ecommerce` junto con `estado_producto`. Para Gymshark en
+   tránsito debe quedar `publicado_ecommerce=0`.
+7. Hay 121 colores, 21 categorías, 28 productos, 159 variantes, 28 compras y
+   4 proveedores en la base real. No hay tabla `inventario_stock`.
+8. La comparación exacta de productos, colores, categorías, cantidades y
+   duplicados del Excel no puede cerrarse hasta recibir el archivo.
+
+B. TABLAS INVOLUCRADAS Y COLUMNAS RELEVANTES
+---------------------------------------------
+Conteos actuales reales:
+
+- `lineas_ropa` (4): `id`, `nombre_linea`, `estado_linea`, timestamps.
+  `nombre_linea` es único.
+- `categorias_productos` (21): `id`, `nombre_categoria`, `linea_ropa_id`,
+  `estado_categoria`, timestamps. Tiene FK a `lineas_ropa`.
+- `productos` (28): `id`, `codigo_producto`, `descripcion_producto`,
+  `imagen_producto`, `cantidad_compra_producto`, `stock_venta_producto`,
+  `precio_pesos_producto`, `precio_dolares_producto`, `precio_venta_producto`,
+  `precio_promocional`, `promocion_activa`, `promocion_fecha_inicio`,
+  `promocion_fecha_fin`, `promocion_etiqueta`, `compras_id`, `estado_producto`,
+  `publicado_ecommerce`, `categoria_producto_id`, timestamps.
+- `colores` (121): `id`, `nombre_color`, `codigo_color`, timestamps.
+  `codigo_color` es único; `nombre_color` no es único.
+- `colores_productos` (159): `id`, `producto_id`, `colores_id`,
+  `cantidad_por_color`, `stock_por_color`, `talla_por_color`, timestamps.
+  Existe unicidad real sobre (`producto_id`, `colores_id`, `talla_por_color`).
+- `proveedores` (4): `id`, `tienda_proveedor`, `nombres_proveedor`,
+  `apellidos_proveedor`, `cedula_proveedor`, `telefono_proveedor`,
+  `direccion_proveedor`, `email_proveedor`, `estado_proveedor`, timestamps.
+  Cédula y email son únicos cuando se informan.
+- `compras` (28): `id`, `codigo_compra`, `descripcion_compra`, `envio_compra`,
+  `total_pesos_compra`, `proveedor_id`, `estado_compra`, `estado_recepcion`,
+  `total_dolares_compra`, `importacion_compra`, `total_final_compra`, timestamps.
+  `proveedor_id` y `estado_recepcion` son obligatorios; el valor por defecto
+  de `estado_recepcion` es `EN_TRANSITO`.
+- `compra_items` (159): `id`, `compra_id`, `producto_id`, `colores_id`, `talla`,
+  `cantidad`, `stock_ingresado`, `costo_unitario_pesos`,
+  `costo_unitario_dolares`, `subtotal_pesos`, `subtotal_dolares`, `estado`,
+  `observacion`, `metadata`, timestamps. `colores_id` no tiene FK propia;
+  el servicio de recepción valida la variante completa.
+- `inventario_movimientos` (160): `id`, `producto_id`, `colores_productos_id`,
+  `pedido_id`, `compra_id`, `user_id`, `tipo_movimiento`, `cantidad`,
+  `stock_antes`, `stock_despues`, `motivo`, `metadata`, `compra_item_id`,
+  `compra_recepcion_id`, `compra_recepcion_item_id`,
+  `proveedor_reclamo_reposicion_id`, timestamps.
+- `compra_recepciones` (28): `id`, `compra_id`, `user_id`, `fecha_recepcion`,
+  `observacion`, `idempotency_key`, timestamps.
+- `compra_recepcion_items` (159): `id`, `compra_recepcion_id`, `compra_item_id`,
+  `cantidad_recibida`, `cantidad_aceptada`, `cantidad_danada`,
+  `cantidad_incorrecta`, `cantidad_faltante_declarada`, `cierra_item`,
+  `observacion`, timestamps. Hay unicidad por recepción + compra_item.
+- `producto_imagenes` (0): `id`, `producto_id`, `color_id`, `color_nombre`,
+  `color_normalizado`, `ruta`, `nombre_original`, `mime_type`, pesos,
+  dimensiones, `orden`, `es_principal`, `activo`, timestamps.
+- `stock_reservas` (0): `id`, `session_id`, `producto_id`, `color_id`, `talla`,
+  `cantidad`, `expires_at`, `metadata`, timestamps.
+- `pedidos` (1) y `detalle_pedidos` (1): contienen el producto, color, talla,
+  snapshots de nombre/precio y estados de pedido/pago/envío.
+- `ventas` (0): resumen comercial vinculado a `pedidos`.
+- También existen tablas de reclamos/reposición de proveedor, actualmente sin
+  filas: `proveedor_reclamos`, `proveedor_reclamo_items`,
+  `proveedor_reclamo_resoluciones`, `proveedor_reclamo_eventos` y
+  `proveedor_reclamo_reposiciones`.
+- `inventario_stock`: NO EXISTE.
+
+No hay CHECK constraints en las tablas auditadas para imponer estados o valores
+numéricos. Parte importante de la integridad se aplica en servicios/controladores.
+
+C. LÍNEA GYMSHARK
+-----------------
+Registro encontrado:
+
+- id: `1`
+- nombre real: `GymShark`
+- código: no existe columna de código en `lineas_ropa`
+- estado_linea: `1` (activa)
+- categorías asociadas: 0
+- productos asociados por categoría: 0
+
+Recomendación: reutilizar `lineas_ropa.id=1`. La collation de la base es
+`utf8mb4_unicode_ci`, pero debe conservarse el nombre real existente y no crear
+otra variante `Gymshark`/`GYMSHARK`.
+
+D. PROVEEDORES ENCONTRADOS Y RECOMENDACIÓN
+------------------------------------------
+Registros actuales, todos activos:
+
+- id 1: `Proveedor 1`; datos de contacto nulos.
+- id 3: `Proveedor Línea Americana`; datos de contacto nulos.
+- id 4: `Proveedor Lote Mixto BootyFitness`; datos de contacto nulos.
+- id 5: `Proveedor Línea Brasileña`; datos de contacto nulos.
+
+Resultados de búsqueda por nombre:
+
+- Gymshark / Línea Gymshark: 0.
+- Línea Americana: id 3.
+- Línea Brasileña: id 5.
+- Genéricos: ids 1 y 4.
+
+Proveedor recomendado: ninguno de los existentes puede recomendarse como
+Gymshark sin confirmación del usuario. Si la compra procede efectivamente de
+uno de los proveedores existentes, reutilizar su id confirmado. Si es un
+proveedor nuevo, falta crear un registro con al menos tienda, nombres,
+apellidos y estado; no se creó en esta auditoría.
+
+E. CATEGORÍAS EXISTENTES, FALTANTES Y POSIBLES DUPLICADOS
+----------------------------------------------------------
+No hay categorías para GymShark. Las categorías actuales son:
+
+- `americana` (id 4): BLUSAS BÁSICAS, CHAQUETAS, CONJUNTO SHORTS, LEGGINS,
+  SHORTS, TOPS, TOPS LARGO, LEGGINS SCULPT SCRUNCH, CONJUNTOS, TOP.
+- `linea_brasilena` (id 2): TOPS, VESTIDO SHORTS, TOP, CONJUNTOS,
+  Enterizos corto, Enterizos largos, Enterizos vestido corto, CHAQUETAS,
+  T SHIRTS, LEGGINS BASTA ANCHA, SHORTS.
+- `segunda_piel` (id 3): 0 categorías.
+- `GymShark` (id 1): 0 categorías.
+
+Posibles duplicados semánticos globales, que en realidad están separados por
+línea y por tanto no son reutilizables directamente para Gymshark:
+
+- CHAQUETAS: ids 9 y 23.
+- CONJUNTOS: ids 19 y 27.
+- SHORTS: ids 12 y 26.
+- TOP: ids 18 y 28.
+- TOPS: ids 13 y 16.
+
+No existe unicidad de `nombre_categoria` por línea. No se detectaron duplicados
+dentro de la misma línea. Las categorías del Excel y las categorías faltantes
+son ND porque el Excel no está disponible. Técnicamente una categoría de otra
+línea no debe asignarse a Gymshark solo por compartir el nombre: su
+`linea_ropa_id` quedaría incorrecto. Deben definirse categorías Gymshark
+asociadas al id 1.
+
+F. COLORES EXISTENTES, FALTANTES Y POSIBLES DUPLICADOS
+-------------------------------------------------------
+Estado de la base:
+
+- colores totales: 121.
+- colores usados por variantes: 36.
+- colores sin uso actual: 85.
+- nombres con `/`: 0.
+- códigos hex duplicados: 0.
+- duplicado exacto de nombre: `beige`, ids 12 (`#fff8de`) y 20 (`#F5F5DC`).
+
+Familias con riesgo de confusión comercial ya presentes: negro / negro humo /
+negro carbón / negro musgo; gris / gris claro / gris medio / gris oscuro /
+gris humo / gris oxford; blanco / blanco hueso / blanco perla; azul / azul
+marino / azul rey / azul eléctrico / azul acero / azul claro; rosa / rosado /
+fucsia / magenta / rosa barbie; morado / violeta / lila / lavanda; y varias
+familias de vino, beige, café y verde. Son nombres distintos con códigos
+distintos y no deben fusionarse automáticamente.
+
+El Excel no está disponible, por lo que no se puede indicar cuántos colores
+del Excel ya existen ni cuántos faltan. En particular, no hay correspondencia
+exacta auditada para `Black`, `Asphalt Grey`, `Force Blue`, `Steady Purple`,
+`Electric Pink` o `Sorbet Yellow`. No debe elegirse una traducción aproximada
+solo por similitud visual.
+
+No hay colores compuestos con `/` en la base actual. Recomendación conforme al
+criterio solicitado: `Black/Asphalt Grey`, `Force Blue/Steady Purple` y
+`Electric Pink/Sorbet Yellow` deben conservarse como un solo nombre comercial
+de color si están en el Excel. Solo se separan si una regla ya documentada del
+negocio o el Excel lo exige. No se creó ningún color.
+
+G. PRODUCTOS EXISTENTES, SIMILARES Y NUEVOS
+--------------------------------------------
+Estado de la base:
+
+- productos totales: 28.
+- productos asociados a GymShark por línea: 0.
+- productos sin categoría: 0.
+- códigos de producto duplicados: 0.
+- variantes duplicadas por producto + color + talla: 0.
+- productos con nombre repetido: `ENTERIZO ICONIC SILUETA PROMO`, ids 5 y 6.
+  Tienen categorías diferentes (`Enterizos corto` y `Enterizos largos`) y
+  costos diferentes (USD 14.50 y USD 18.00), por lo que son una evidencia real
+  de que el nombre visible por sí solo no identifica el producto.
+- variación de costo entre variantes de un mismo producto: 0 casos actuales.
+
+Comparación con los productos Gymshark del Excel:
+
+- exactos existentes: ND.
+- similares: ND.
+- nuevos: ND.
+
+La causa no es una ausencia de coincidencias sino la ausencia del archivo fuente.
+No se debe reportar 0 como resultado definitivo. La comparación debe considerar
+como mínimo código, nombre, categoría, color, talla y costo. Si el mismo
+producto Gymshark tiene costos diferentes y el costo debe quedar documentado,
+hay una tensión real: `productos.precio_dolares_producto` es un único costo a
+nivel de producto, mientras `compra_items.costo_unitario_dolares` sí permite
+guardar el costo por línea. Debe definirse si se separan productos por costo,
+se consolida un costo único o se conserva la diferencia solo en la compra.
+
+H. REGLAS REALES DE VARIANTES Y STOCK
+-------------------------------------
+- La variante de catálogo es `producto_id + colores_id + talla_por_color`.
+- `talla_por_color`, `cantidad_por_color` y `stock_por_color` son VARCHAR en la
+  base, aunque el backend los trata numéricamente cuando calcula stock.
+- Las tallas actuales son `XS`, `S`, `M`, `L`, `XS-S`, `S-M`, `M-L` y
+  `XS-S-M`. Hay 119 variantes con talla compuesta y ninguna variante actual
+  con talla vacía.
+- `cantidad_por_color` representa cantidad comprada/asignada a la variante.
+- `stock_por_color` representa stock físico vendible de esa variante.
+- `productos.cantidad_compra_producto` y `compra_items.cantidad` representan
+  cantidad comprada; `productos.stock_venta_producto` es el total agregado de
+  stock de variantes; `compra_items.stock_ingresado` es la cantidad aceptada
+  físicamente para ese item.
+- No hay una tabla separada de stock comprado o stock inicial.
+- `stock_reservas` es una capa separada de reservas por sesión, producto,
+  color y talla; actualmente tiene 0 filas.
+- Los 28 productos actuales suman 304 unidades compradas y 303 unidades de
+  stock de variantes. La diferencia de una unidad corresponde a una salida de
+  venta existente del producto id 3; no es una inconsistencia de carga.
+- No hay stock negativo, productos sin variantes, variantes duplicadas ni items
+  de compra huérfanos.
+
+Conversión recomendada para una compra Gymshark en tránsito, una vez validado
+el Excel: crear variantes con la cantidad pedida en `cantidad_por_color` y
+`stock_por_color=0`; crear `compra_items.cantidad` con esa cantidad y
+`stock_ingresado=0`. Las tallas compuestas deben conservarse como un literal
+normalizado, no dividirse en filas artificiales.
+
+I. REGLAS REALES DE COMPRA EN TRÁNSITO Y RECEPCIÓN
+--------------------------------------------------
+Alta de compra:
+
+- `CompraController::store` exige código, descripción, envío y proveedor
+  existente; importación y estado de compra son opcionales.
+- El controlador fuerza `compras.estado_recepcion='EN_TRANSITO'`.
+- `proveedor_id` es NOT NULL y tiene FK a `proveedores`.
+- Actualmente las 28 compras existentes tienen `estado_compra='1'` y
+  `estado_recepcion='RECIBIDA'`. No existe hoy una compra en tránsito real,
+  aunque el flujo está implementado.
+
+Alta de producto asociado a compra:
+
+- Si la compra está `EN_TRANSITO`, el controlador fuerza
+  `stock_venta_producto=0`.
+- Las variantes se crean con `stock_por_color=0`.
+- `compra_items.stock_ingresado` se crea en 0.
+- No se genera movimiento `ENTRADA_COMPRA` por registrar la compra en tránsito.
+- El producto se inicializa con `publicado_ecommerce=0`.
+
+Recepción física:
+
+- `EN_TRANSITO` y `RECEPCION_PARCIAL` son estados recepcionables.
+- Se crea una fila en `compra_recepciones` y una fila por item en
+  `compra_recepcion_items`.
+- La cantidad aceptada incrementa `colores_productos.stock_por_color`,
+  actualiza `productos.stock_venta_producto`, incrementa
+  `compra_items.stock_ingresado` y genera `inventario_movimientos` con tipo
+  `ENTRADA_COMPRA` y referencias a compra, item y recepción.
+- `RECEPCION_PARCIAL`: todavía queda cantidad pendiente.
+- `RECIBIDA`: no queda pendiente y no hay dañada, incorrecta ni faltante.
+- `CON_INCIDENCIAS`: no queda pendiente, pero existe dañada, incorrecta o
+  faltante declarada.
+- La columna es VARCHAR, no ENUM, y no tiene CHECK; la validez de estados la
+  impone el servicio.
+- El servicio permite stock 0 antes de recibir. Una entrada de cantidad cero
+  no genera movimiento.
+
+Estado de consistencia de recepciones actuales:
+
+- 28 compras tienen exactamente una recepción; ninguna carece de recepción y
+  ninguna tiene más de una recepción.
+- 159 filas de recepción suman 304 recibidas y 304 aceptadas; dañadas,
+  incorrectas y faltantes suman 0.
+- Los 159 items tienen `stock_ingresado` consistente con las cantidades
+  aceptadas.
+
+Observación histórica: los 159 movimientos actuales `ENTRADA_COMPRA` no tienen
+`compra_recepcion_id`; son entradas de las cargas históricas realizadas antes
+del flujo de recepción enlazado. Esto no debe replicarse en Gymshark: las
+entradas futuras deben nacer solo al recibir y quedar vinculadas a la recepción.
+
+J. REGLAS REALES DE PUBLICACIÓN ECOMMERCE
+-----------------------------------------
+- No existe una tabla separada de publicación.
+- La visibilidad exige `productos.estado_producto=1` y
+  `productos.publicado_ecommerce=1`.
+- Las consultas ecommerce cargan categorías/líneas, variantes, stock e
+  imágenes. Las reservas se descuentan para disponibilidad de venta.
+- `publicado_ecommerce` es independiente de `estado_recepcion`; publicar no
+  cambia recepción y recibir no publica automáticamente.
+- El endpoint de publicación exige producto activo, pero no valida por sí solo
+  que tenga stock positivo. Por eso una compra en tránsito debe quedar
+  explícitamente no publicada y no debe llamarse al endpoint de publicación.
+- La base actual tiene 28 productos activos y publicados, pero 0 filas en
+  `producto_imagenes` y 0 imágenes legacy en `productos.imagen_producto`.
+  Esto muestra que la publicación actual no depende de una fila de imagen.
+- El formulario HTTP de alta de producto sí exige una imagen principal; los
+  scripts históricos insertaron productos con imagen nula. Este punto debe
+  decidirse antes de usar el alta por interfaz.
+
+Carga recomendada mientras Gymshark esté `EN_TRANSITO`:
+
+- compra creada y activa;
+- productos y variantes creados;
+- `stock_venta_producto=0`;
+- `stock_por_color=0`;
+- `publicado_ecommerce=0`;
+- sin `ENTRADA_COMPRA` hasta la recepción aceptada;
+- sin reservar stock ni generar filas de `stock_reservas`.
+
+K. REGLAS REALES DE PRECIOS
+---------------------------
+Campos observados:
+
+- Compra: totales en pesos, dólares, envío, importación y total final.
+- Item: costo unitario y subtotal en pesos y dólares.
+- Producto: `precio_pesos_producto`, `precio_dolares_producto`,
+  `precio_venta_producto`, precio promocional y control de promoción.
+- No existe una columna llamada `precio_compra` en `productos`; el costo de
+  compra detallado está en `compra_items` y el costo asociado al producto se
+  guarda en `precio_dolares_producto` / `precio_pesos_producto`.
+
+Comprobación histórica: los 28 totales de compra coinciden con la suma de
+`compra_items.subtotal_dolares`; los costos de items coinciden con el costo
+del producto en todos los casos actuales.
+
+Regla pendiente para Gymshark: el precio visible del Excel debe confirmarse
+como costo de adquisición o como precio de venta. Si es costo de proveedor,
+debe ir a `compra_items.costo_unitario_*`, sus subtotales, el total de compra y
+el costo del producto. Si es precio de tienda, no debe usarse como costo.
+
+Si todavía no existe precio de venta, `precio_venta_producto` no puede quedar
+NULL porque la columna es NOT NULL; debe quedar en 0. La combinación segura es
+`precio_venta_producto=0`, `precio_promocional=NULL`, `promocion_activa=0` y
+`publicado_ecommerce=0`, hasta definir el precio comercial. No se debe igualar
+automáticamente el precio de venta al costo.
+
+L. DUPLICADOS DEL EXCEL
+-----------------------
+No se encontró el Excel ni una hoja de duplicados accesible. Por tanto:
+
+- duplicados detectados en el Excel: ND;
+- solape de capturas: ND;
+- unidades reales adicionales: ND;
+- recomendación: no cargar cantidades hasta recibir el archivo y resolver la
+  hoja de duplicados. Cada fila duplicada debe clasificarse como solape,
+  variante adicional o unidad adicional antes de calcular totales.
+
+M. RIESGOS ANTES DE INSERTAR
+----------------------------
+1. Falta el Excel consolidado: impide contar productos, colores, categorías,
+   tallas, cantidades, costos y duplicados.
+2. Falta el proveedor Gymshark o la confirmación de un proveedor existente.
+3. GymShark no tiene categorías; asignar una categoría de Americana o Brasileña
+   rompería la semántica de la relación con la línea.
+4. Hay nombres de categoría repetidos entre líneas; el nombre solo no identifica
+   una categoría.
+5. `beige` está duplicado con dos códigos hex distintos; el nombre solo no
+   identifica un color.
+6. Los nombres comerciales ingleses y los colores compuestos no tienen una
+   equivalencia exacta demostrada en la base.
+7. El mismo nombre de producto ya aparece con costos y categorías diferentes;
+   no se debe consolidar Gymshark solo por descripción.
+8. El costo en `productos` es de nivel producto, pero el costo en
+   `compra_items` es de nivel de línea/variante.
+9. Las cantidades de stock se almacenan como VARCHAR en variantes y productos;
+   deben validarse como enteros no negativos antes de cargar.
+10. Compra, producto y recepción tienen campos NOT NULL que requieren proveedor,
+    compra, categoría en el flujo HTTP, cantidades y costos con valores
+    explícitos.
+11. Las cargas históricas de `exports/` crean stock y movimientos de entrada
+    inmediatamente y publican productos; no deben copiarse sin adaptar el
+    flujo actual de compra en tránsito.
+12. Todas las compras actuales están `RECIBIDA`; no hay un registro real en
+    tránsito para usar como ejemplo operativo.
+13. No hay CHECK constraints para impedir manualmente estados inválidos; se debe
+    usar el servicio Laravel de recepción para evitar inconsistencias.
+14. El formulario HTTP exige imagen principal, aunque la base la permite nula;
+    falta confirmar si el lote Gymshark tendrá imágenes.
+
+N. PREGUNTAS PENDIENTES PARA EL USUARIO
+---------------------------------------
+1. ¿Cuál es el archivo Excel consolidado Gymshark y dónde debe leerse? ¿Incluye
+   la hoja de duplicados?
+2. ¿Qué proveedor debe usar la compra: uno de los ids existentes o un proveedor
+   Gymshark nuevo? Si es nuevo, ¿qué datos de identificación/contacto tiene?
+3. ¿Qué categorías corresponden a cada producto Gymshark? ¿Se desea crear
+   categorías específicas bajo la línea id 1?
+4. ¿Los precios visibles del Excel son costos de compra, precios de venta o
+   ambos? ¿Cuál es la moneda?
+5. Si aún no existe precio de venta, ¿se confirma dejarlo en 0 y no publicar?
+6. ¿Los productos con el mismo nombre y distinto costo deben separarse como
+   productos independientes?
+7. ¿Se confirma conservar cada color Gymshark compuesto con `/` como un solo
+   color comercial?
+8. ¿Qué código y descripción debe tener la compra, y qué valores corresponden a
+   envío e importación?
+9. ¿Se dispone de imagen principal o se autoriza crear productos sin imagen
+   mientras sigan no publicados?
+
+O. RECOMENDACIÓN TÉCNICA DE CARGA
+---------------------------------
+No preparar todavía un script de inserción. La secuencia técnica recomendada,
+después de responder las preguntas pendientes, es:
+
+1. Reutilizar línea `GymShark` id 1.
+2. Resolver proveedor de forma explícita; no usar un genérico por defecto.
+3. Definir/crear categorías asociadas a línea id 1, evitando reutilizar ids de
+   otras líneas.
+4. Normalizar el Excel y resolver duplicados antes de calcular cantidades y
+   totales. Usar una clave de comparación que incluya código/nombre, categoría,
+   color, talla y costo.
+5. Reutilizar un color solo cuando coincidan las reglas de nombre y/o código
+   comercial confirmadas. Mantener los tres colores compuestos como un solo
+   nombre si aparecen.
+6. Registrar la compra con `estado_recepcion=EN_TRANSITO` y sus totales de
+   costo, sin generar stock físico.
+7. Crear productos con categoría Gymshark, cantidades compradas, costo, precio
+   de venta pendiente en 0 si corresponde, estado activo según decisión y
+   `publicado_ecommerce=0`.
+8. Crear variantes con sus cantidades, tallas literales normalizadas y stock 0.
+9. Crear `compra_items` con `stock_ingresado=0`; no crear movimientos
+   `ENTRADA_COMPRA` en la carga inicial en tránsito.
+10. Recibir físicamente mediante `CompraRecepcionService`, que actualizará
+    stock, items, estado y movimientos con trazabilidad.
+11. Validar después: sumas de variantes vs producto, sumas de items vs compra,
+    unicidad producto/color/talla, stock cero, publicación cero y ausencia de
+    movimientos de entrada antes de recibir.
+
+Conclusión: la infraestructura para registrar Gymshark en tránsito existe y la
+línea puede reutilizarse. La carga no debe comenzar hasta disponer del Excel,
+resolver proveedor/categorías y confirmar la semántica de precios.

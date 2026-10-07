@@ -1,0 +1,41 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_americana_leggins_impact_20260905
+
+INTERPRETACION
+Producto | Color | Talla interpretada | Cantidad | Costo | Precio venta
+LEGGINS IMPACT | negro | XS-S | 2 | USD 12.50 | USD 35.00
+LEGGINS IMPACT | negro | M | 4 | USD 12.50 | USD 35.00
+LEGGINS IMPACT | rosa barbie | XS-S | 3 | USD 12.50 | USD 35.00
+LEGGINS IMPACT | vino quemado | XS-S | 2 | USD 12.50 | USD 35.00
+LEGGINS IMPACT | vino rojizo | XS-S | 1 | USD 12.50 | USD 35.00
+LEGGINS IMPACT | vino rojizo | M | 1 | USD 12.50 | USD 35.00
+LEGGINS IMPACT | cafe | XS-S | 2 | USD 12.50 | USD 35.00
+LEGGINS IMPACT | coral | XS-S | 2 | USD 12.50 | USD 35.00
+LEGGINS IMPACT | coral | M | 1 | USD 12.50 | USD 35.00
+LEGGINS IMPACT | azul | M | 1 | USD 12.50 | USD 35.00
+LEGGINS IMPACT | azul marino | XS-S | 1 | USD 12.50 | USD 35.00
+
+NORMALIZACIONES
+- Barbie se normalizó a rosa barbie, color existente.
+- Café se normalizó a cafe, color existente.
+- Vino quemado no existía y se creó con código #6B2737.
+- Vino rojizo no existía y se creó con código #8B2F39.
+- Se detectaron 7 variantes con talla compuesta XS-S.
+- No se detectaron ambigüedades.
+
+RESULTADOS ESPERADOS
+- Producto: LEGGINS IMPACT.
+- Variantes: 11.
+- Piezas: 20.
+- Costo total: USD 250.00.
+- Venta estimada: USD 700.00.
+- Utilidad bruta: USD 450.00.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_americana_leggins_impact_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_americana_leggins_impact_bootyfitness.sql
+- Resumen: exports/resumen_linea_americana_leggins_impact_bootyfitness.txt
+
+RESULTADO DE EJECUCION
+- Pendiente de ejecución.

@@ -1,0 +1,46 @@
+RESUMEN DE CARGA DE PRODUCTO BOOTYFITNESS
+
+Lote: linea_brasilena_top_t_sleeve_20260904
+
+INTERPRETACION
+- Producto: TOP T-SLEEVE PROMO
+- Linea: linea_brasilena
+- Categoria: TOP
+- Negro / XS: 3 piezas
+- Negro / S: 3 piezas
+- Negro / M: 3 piezas
+- Coffy / XS-S: 1 pieza
+- Azul marino / XS-S: 1 pieza
+- Gris / XS-S: 1 pieza
+- Gris / S-M: 1 pieza
+- Cafe / XS-S: 1 pieza
+- Tallas compuestas detectadas: XS-S y S-M.
+- Normalizacion: café se reutiliza como cafe.
+
+PRECIOS
+- Costo unitario: USD 8.00.
+- Precio unitario de venta cargado: USD 22.00.
+- Etiqueta conservada: PROMO 2X$33.
+- La base y el catalogo manejan precio unitario, no reglas de paquetes; por eso la promocion 2X$33 no se activa como precio unitario.
+
+RESULTADOS ESPERADOS
+- Variantes: 8.
+- Piezas: 14.
+- Costo total: USD 112.00.
+- Venta estimada por precio unitario: USD 308.00.
+- Utilidad bruta por precio unitario: USD 196.00.
+- Referencia de venta por 7 pares a 2X$33: USD 231.00.
+
+ARCHIVOS
+- SQL principal: exports/insert_linea_brasilena_top_t_sleeve_productos_stock_bootyfitness.sql
+- Validador: exports/validar_linea_brasilena_top_t_sleeve_bootyfitness.sql
+
+RESULTADO DE EJECUCION
+- Insertado correctamente.
+- Producto: TOP T-SLEEVE PROMO (ID 13).
+- Variantes: 8.
+- Piezas: 14.
+- Costo total: USD 112.00.
+- Venta estimada por precio unitario: USD 308.00.
+- Utilidad bruta por precio unitario: USD 196.00.
+- Validador: OK.
