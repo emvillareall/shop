@@ -52,26 +52,32 @@ class Checkout extends Component
     public float $payphoneFeePercent = 0;
 
     protected array $validationAttributes = [
-        'cedula' => 'cedula / identificacion',
+        'cedula' => 'cédula / identificación',
         'cliente.nombres_clientes' => 'nombres',
         'cliente.apellidos_clientes' => 'apellidos',
-        'cliente.telefono_clientes' => 'telefono',
+        'cliente.telefono_clientes' => 'teléfono',
         'cliente.ciudad_clientes' => 'ciudad',
-        'cliente.direccion_clientes' => 'direccion',
-        'cliente.email_clientes' => 'correo electronico',
-        'metodo_pago' => 'metodo de pago',
+        'cliente.direccion_clientes' => 'dirección',
+        'cliente.email_clientes' => 'correo electrónico',
+        'metodo_pago' => 'método de pago',
         'referencia_transferencia' => 'referencia de transferencia',
         'comprobante_transferencia' => 'comprobante de transferencia',
     ];
 
     protected array $messages = [
         'required' => 'El campo :attribute es obligatorio.',
-        'email' => 'El campo :attribute debe ser un correo valido.',
+        'email' => 'Ingresa un correo electrónico válido, por ejemplo nombre@dominio.com.',
         'max' => 'El campo :attribute no puede superar :max caracteres.',
-        'min' => 'El campo :attribute debe tener al menos :min caracteres.',
-        'in' => 'El campo :attribute seleccionado no es valido.',
+        'in' => 'El campo :attribute seleccionado no es válido.',
         'file' => 'El campo :attribute debe ser un archivo.',
         'mimes' => 'El campo :attribute debe ser un archivo de tipo: :values.',
+        'cedula.required' => 'La cédula o identificación es obligatoria.',
+        'cliente.telefono_clientes.required' => 'El teléfono de contacto es obligatorio.',
+        'cliente.nombres_clientes.required' => 'Los nombres son obligatorios.',
+        'cliente.apellidos_clientes.required' => 'Los apellidos son obligatorios.',
+        'cliente.ciudad_clientes.required' => 'La ciudad de destino es obligatoria.',
+        'cliente.direccion_clientes.required' => 'La dirección de entrega es obligatoria.',
+        'cliente.email_clientes.required' => 'El correo electrónico es obligatorio.',
     ];
 
     public function boot(
@@ -92,13 +98,39 @@ class Checkout extends Component
     protected function rules(): array
     {
         return [
-            'cedula' => 'required|string|min:5|max:40',
-            'cliente.nombres_clientes' => 'required|string|max:120',
-            'cliente.apellidos_clientes' => 'required|string|max:120',
-            'cliente.telefono_clientes' => 'required|string|max:40',
-            'cliente.ciudad_clientes' => 'required|string|max:80',
-            'cliente.direccion_clientes' => 'required|string|max:255',
-            'cliente.email_clientes' => 'required|email|max:120',
+            'cedula' => [
+                'required', 'string', 'max:40',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (is_string($value) && $value !== '' && !$this->identificacionValida($value)) {
+                        $fail('Ingresa una cédula ecuatoriana válida, un RUC de 13 dígitos con formato válido o un pasaporte de 5 a 20 caracteres.');
+                    }
+                },
+            ],
+            'cliente.nombres_clientes' => [
+                'required', 'string', 'max:120',
+                fn (string $attribute, mixed $value, \Closure $fail) => $this->validarNombre($value, $fail, 'Los nombres deben tener al menos 2 caracteres y contener solo letras, espacios o separadores habituales.'),
+            ],
+            'cliente.apellidos_clientes' => [
+                'required', 'string', 'max:120',
+                fn (string $attribute, mixed $value, \Closure $fail) => $this->validarNombre($value, $fail, 'Los apellidos deben tener al menos 2 caracteres y contener solo letras, espacios o separadores habituales.'),
+            ],
+            'cliente.telefono_clientes' => [
+                'required', 'string', 'max:40',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (is_string($value) && $value !== '' && !$this->telefonoMovilEcuadorValido($value)) {
+                        $fail('Ingresa un celular ecuatoriano válido de 10 dígitos que empiece con 09. También puedes usar +593 9xxxxxxxx.');
+                    }
+                },
+            ],
+            'cliente.ciudad_clientes' => [
+                'required', 'string', 'max:80',
+                fn (string $attribute, mixed $value, \Closure $fail) => $this->validarCiudad($value, $fail),
+            ],
+            'cliente.direccion_clientes' => [
+                'required', 'string', 'max:255',
+                fn (string $attribute, mixed $value, \Closure $fail) => $this->validarDireccion($value, $fail),
+            ],
+            'cliente.email_clientes' => 'required|string|email:rfc|max:120',
         ];
     }
 
@@ -113,40 +145,187 @@ class Checkout extends Component
 
     private function resolverCliente(): void
     {
-        $this->validate($this->rules());
+        $this->normalizarDatosCliente();
+        $datosValidados = $this->validate($this->rules());
+        $clienteData = [
+            'cedula_clientes' => $datosValidados['cedula'],
+            'nombres_clientes' => $datosValidados['cliente']['nombres_clientes'],
+            'apellidos_clientes' => $datosValidados['cliente']['apellidos_clientes'],
+            'telefono_clientes' => $datosValidados['cliente']['telefono_clientes'],
+            'ciudad_clientes' => $datosValidados['cliente']['ciudad_clientes'],
+            'direccion_clientes' => $datosValidados['cliente']['direccion_clientes'],
+            'email_clientes' => $datosValidados['cliente']['email_clientes'],
+        ];
 
         $registro = Cliente::query()
-            ->where('cedula_clientes', $this->cedula)
-            ->orWhere('email_clientes', $this->cliente['email_clientes'])
-            ->orWhere('telefono_clientes', $this->cliente['telefono_clientes'])
+            ->where('cedula_clientes', $clienteData['cedula_clientes'])
+            ->orWhere('email_clientes', $clienteData['email_clientes'])
+            ->orWhere('telefono_clientes', $clienteData['telefono_clientes'])
             ->first();
 
         if ($registro) {
-            $registro->update([
-                'cedula_clientes' => $this->cedula,
-                'nombres_clientes' => $this->cliente['nombres_clientes'],
-                'apellidos_clientes' => $this->cliente['apellidos_clientes'],
-                'telefono_clientes' => $this->cliente['telefono_clientes'],
-                'ciudad_clientes' => $this->cliente['ciudad_clientes'],
-                'direccion_clientes' => $this->cliente['direccion_clientes'],
-                'email_clientes' => $this->cliente['email_clientes'],
-            ]);
+            $registro->update($clienteData);
             $this->cliente_id = (int) $registro->id;
             return;
         }
 
-        $nuevo = Cliente::query()->create([
-            'cedula_clientes' => $this->cedula,
-            'nombres_clientes' => $this->cliente['nombres_clientes'],
-            'apellidos_clientes' => $this->cliente['apellidos_clientes'],
-            'telefono_clientes' => $this->cliente['telefono_clientes'],
-            'ciudad_clientes' => $this->cliente['ciudad_clientes'],
-            'direccion_clientes' => $this->cliente['direccion_clientes'],
-            'email_clientes' => $this->cliente['email_clientes'],
-            'estado_clientes' => 1,
-        ]);
+        $nuevo = Cliente::query()->create($clienteData + ['estado_clientes' => 1]);
 
         $this->cliente_id = (int) $nuevo->id;
+    }
+
+    private function normalizarDatosCliente(): void
+    {
+        if (is_string($this->cedula)) {
+            $this->cedula = $this->normalizarEspacios($this->cedula);
+        }
+
+        foreach (['nombres_clientes', 'apellidos_clientes', 'ciudad_clientes', 'direccion_clientes'] as $campo) {
+            if (isset($this->cliente[$campo]) && is_string($this->cliente[$campo])) {
+                $this->cliente[$campo] = $this->normalizarEspacios($this->cliente[$campo]);
+            }
+        }
+
+        if (isset($this->cliente['telefono_clientes']) && is_string($this->cliente['telefono_clientes'])) {
+            $telefono = preg_replace('/[\s()-]+/u', '', trim($this->cliente['telefono_clientes']));
+            $telefono = is_string($telefono) ? $telefono : trim($this->cliente['telefono_clientes']);
+            if (str_starts_with($telefono, '+5939') && strlen($telefono) === 13) {
+                $telefono = '0' . substr($telefono, 4);
+            } elseif (str_starts_with($telefono, '5939') && strlen($telefono) === 12) {
+                $telefono = '0' . substr($telefono, 3);
+            }
+            $this->cliente['telefono_clientes'] = $telefono;
+        }
+
+        if (isset($this->cliente['email_clientes']) && is_string($this->cliente['email_clientes'])) {
+            $this->cliente['email_clientes'] = Str::lower(trim($this->cliente['email_clientes']));
+        }
+    }
+
+    private function normalizarEspacios(string $value): string
+    {
+        $value = preg_replace('/^\s+|\s+$/u', '', $value) ?? trim($value);
+        return preg_replace('/\s+/u', ' ', $value) ?? $value;
+    }
+
+    private function identificacionValida(string $value): bool
+    {
+        if (preg_match('/^(.)\1+$/u', $value) || $this->esSecuenciaNumerica($value)) {
+            return false;
+        }
+
+        if (preg_match('/^\d{10}$/D', $value)) {
+            return $this->cedulaEcuatorianaValida($value);
+        }
+
+        if (preg_match('/^\d{13}$/D', $value)) {
+            $provincia = (int) substr($value, 0, 2);
+            $tipo = (int) $value[2];
+            if ($provincia < 1 || $provincia > 24 || !($tipo <= 5 || in_array($tipo, [6, 9], true)) || substr($value, 10, 3) === '000') {
+                return false;
+            }
+
+            return $tipo > 5 || $this->cedulaEcuatorianaValida(substr($value, 0, 10));
+        }
+
+        return (bool) preg_match('/^[A-Za-z0-9-]{5,20}$/D', $value);
+    }
+
+    private function cedulaEcuatorianaValida(string $value): bool
+    {
+        if (!preg_match('/^\d{10}$/D', $value)) {
+            return false;
+        }
+
+        $provincia = (int) substr($value, 0, 2);
+        $tercerDigito = (int) $value[2];
+        if ($provincia < 1 || $provincia > 24 || $tercerDigito > 5) {
+            return false;
+        }
+
+        $suma = 0;
+        for ($indice = 0; $indice < 9; $indice++) {
+            $digito = (int) $value[$indice];
+            if ($indice % 2 === 0) {
+                $digito *= 2;
+                if ($digito > 9) {
+                    $digito -= 9;
+                }
+            }
+            $suma += $digito;
+        }
+
+        $verificador = (10 - ($suma % 10)) % 10;
+        return $verificador === (int) $value[9];
+    }
+
+    private function esSecuenciaNumerica(string $value): bool
+    {
+        if (!ctype_digit($value) || strlen($value) < 5) {
+            return false;
+        }
+
+        $paso = (int) $value[1] - (int) $value[0];
+        if (abs($paso) !== 1) {
+            return false;
+        }
+
+        for ($indice = 2, $longitud = strlen($value); $indice < $longitud; $indice++) {
+            if ((int) $value[$indice] - (int) $value[$indice - 1] !== $paso) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function telefonoMovilEcuadorValido(string $value): bool
+    {
+        if (!preg_match('/^09\d{8}$/D', $value)) {
+            return false;
+        }
+
+        $abonado = substr($value, 2);
+        return !preg_match('/(.)\1{5,}/D', $abonado) && !$this->esSecuenciaNumerica($abonado);
+    }
+
+    private function validarNombre(mixed $value, \Closure $fail, string $message): void
+    {
+        if (!is_string($value) || $value === '') {
+            return;
+        }
+
+        if (mb_strlen($value) < 2 || !preg_match('/^[\p{L}\p{M}]+(?:[ \x27\x{2019}.-][\p{L}\p{M}]+)*$/u', $value)) {
+            $fail($message);
+        }
+    }
+
+    private function validarCiudad(mixed $value, \Closure $fail): void
+    {
+        if (!is_string($value) || $value === '') {
+            return;
+        }
+
+        if (mb_strlen($value) < 2 || !preg_match('/^[\p{L}\p{M}]+(?:[ \x27\x{2019}.-][\p{L}\p{M}]+)*$/u', $value)) {
+            $fail('Ingresa el nombre de la ciudad o cantón de destino usando letras.');
+        }
+    }
+
+    private function validarDireccion(mixed $value, \Closure $fail): void
+    {
+        if (!is_string($value) || $value === '') {
+            return;
+        }
+
+        preg_match_all('/[\p{L}\p{N}]+/u', $value, $palabras);
+        if (
+            mb_strlen($value) < 20
+            || count($palabras[0] ?? []) < 4
+            || !preg_match('/\p{L}/u', $value)
+            || !preg_match('/^[\p{L}\p{M}\p{N}\s.,#\x27°ºª\/()\-]+$/u', $value)
+        ) {
+            $fail('Completa una dirección de al menos 20 caracteres con calle principal, secundaria, sector y referencia. Usa letras, números y signos habituales de una dirección.');
+        }
     }
 
     public function confirmarPedido()

@@ -12,38 +12,53 @@
         @endif
 
         <div class="rounded-2xl border border-purple-100 bg-white p-5 shadow-sm">
-            <h3 class="mb-3 text-base font-semibold">Datos del cliente</h3>
+            <h3 class="text-base font-semibold">Datos del cliente</h3>
+            <p class="mb-3 mt-1 text-xs leading-5 text-slate-600">Verifica bien estos datos: se usarán para preparar la guía de envío y coordinar la entrega mediante Servientrega.</p>
+            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                La dirección debe incluir calle principal y secundaria, sector y una referencia que ayude a ubicarte.
+            </div>
             <div class="grid gap-3 md:grid-cols-2">
                 <div>
-                    <input type="text" wire:model.defer="cedula" placeholder="Cedula / identificacion">
+                    <label for="checkout-cedula" class="mb-1 block text-xs font-semibold text-slate-700">Cédula / identificación</label>
+                    <input id="checkout-cedula" type="text" wire:model.defer="cedula" maxlength="40" autocomplete="off" placeholder="Ej.: 1712345675 o pasaporte">
+                    <p class="mt-1 text-xs text-slate-500">Aceptamos cédula ecuatoriana, RUC o pasaporte.</p>
                     @error('cedula') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <input type="text" wire:model.defer="cliente.telefono_clientes" placeholder="Telefono">
+                    <label for="checkout-telefono" class="mb-1 block text-xs font-semibold text-slate-700">Teléfono de contacto</label>
+                    <input id="checkout-telefono" type="tel" wire:model.defer="cliente.telefono_clientes" maxlength="40" autocomplete="tel" inputmode="tel" placeholder="Ej.: 098 721 4365">
+                    <p class="mt-1 text-xs text-slate-500">Usaremos un celular ecuatoriano para coordinar la entrega.</p>
                     @error('cliente.telefono_clientes') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <input type="text" wire:model.defer="cliente.nombres_clientes" placeholder="Nombres">
+                    <label for="checkout-nombres" class="mb-1 block text-xs font-semibold text-slate-700">Nombres</label>
+                    <input id="checkout-nombres" type="text" wire:model.defer="cliente.nombres_clientes" maxlength="120" autocomplete="given-name" placeholder="Ej.: Ana María">
                     @error('cliente.nombres_clientes') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <input type="text" wire:model.defer="cliente.apellidos_clientes" placeholder="Apellidos">
+                    <label for="checkout-apellidos" class="mb-1 block text-xs font-semibold text-slate-700">Apellidos</label>
+                    <input id="checkout-apellidos" type="text" wire:model.defer="cliente.apellidos_clientes" maxlength="120" autocomplete="family-name" placeholder="Ej.: Pérez López">
                     @error('cliente.apellidos_clientes') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <input type="text" wire:model.defer="cliente.ciudad_clientes" placeholder="Ciudad">
+                    <label for="checkout-ciudad" class="mb-1 block text-xs font-semibold text-slate-700">Ciudad de destino</label>
+                    <input id="checkout-ciudad" type="text" wire:model.defer="cliente.ciudad_clientes" maxlength="80" autocomplete="address-level2" placeholder="Ej.: Quito">
+                    <p class="mt-1 text-xs text-slate-500">Indica la ciudad o cantón donde recibirás el pedido.</p>
                     @error('cliente.ciudad_clientes') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <input type="text" wire:model.defer="cliente.direccion_clientes" placeholder="Direccion">
+                    <label for="checkout-direccion" class="mb-1 block text-xs font-semibold text-slate-700">Dirección de entrega</label>
+                    <input id="checkout-direccion" type="text" wire:model.defer="cliente.direccion_clientes" maxlength="255" autocomplete="street-address" placeholder="Av. principal y calle secundaria, sector y referencia">
+                    <p class="mt-1 text-xs text-slate-500">Incluye números de casa o lote y un punto de referencia cuando aplique.</p>
                     @error('cliente.direccion_clientes') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
                 <div class="md:col-span-2">
-                    <input type="email" wire:model.defer="cliente.email_clientes" placeholder="Email">
+                    <label for="checkout-email" class="mb-1 block text-xs font-semibold text-slate-700">Correo electrónico</label>
+                    <input id="checkout-email" type="email" wire:model.defer="cliente.email_clientes" maxlength="120" autocomplete="email" placeholder="nombre@dominio.com">
                     @error('cliente.email_clientes') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
             </div>
-            <p class="mt-2 text-xs text-slate-500">Si el cliente ya existe, el sistema lo asocia y actualiza automaticamente.</p>
+            <p class="mt-2 text-xs text-slate-500">El teléfono debe estar correcto para que el transportista pueda coordinar la entrega.</p>
         </div>
 
         <div class="space-y-2 rounded-2xl border border-purple-100 bg-white p-5 shadow-sm">
