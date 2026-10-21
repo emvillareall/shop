@@ -4,11 +4,13 @@ namespace App\Livewire\Ecommerce;
 
 use App\Services\Inventario\InventarioService;
 use App\Services\Inventario\StockReservaService;
+use App\Models\Producto;
 use Livewire\Component;
 
 class CarritoCompras extends Component
 {
     public array $items = [];
+    public array $productImages = [];
     public int $secondsRemaining = 0;
     protected InventarioService $inventarioService;
     protected StockReservaService $stockReservaService;
@@ -76,6 +78,7 @@ class CarritoCompras extends Component
     public function clear(): void
     {
         $this->items = [];
+        $this->productImages = [];
         session()->forget('carrito');
         $this->stockReservaService->releaseSession(session()->getId());
         $this->refreshReservationClock();
@@ -111,6 +114,7 @@ class CarritoCompras extends Component
             }
         } catch (\Throwable) {
             $this->items = [];
+            $this->productImages = [];
             session()->forget('carrito');
             $this->stockReservaService->releaseSession(session()->getId());
             $this->addError('carrito', 'Uno o más productos de tu carrito ya no están disponibles.');
@@ -121,7 +125,63 @@ class CarritoCompras extends Component
             $this->addError('carrito', 'Uno o más productos de tu carrito ya no están disponibles.');
         }
 
+        $this->refreshItemImages();
+
         return true;
+    }
+
+    private function refreshItemImages(): void
+    {
+        $imageKeys = [];
+        $productIdsByImageKey = [];
+        $colorIdsByImageKey = [];
+
+        foreach ($this->items as $item) {
+            $productId = (int) ($item['producto_id'] ?? 0);
+            $colorId = (int) ($item['color_id'] ?? 0);
+            if ($productId < 1) {
+                continue;
+            }
+
+            $imageKey = $productId . ':' . $colorId;
+            $imageKeys[$imageKey] = true;
+            $productIdsByImageKey[$imageKey] = $productId;
+            $colorIdsByImageKey[$imageKey] = $colorId;
+        }
+
+        $this->productImages = array_intersect_key($this->productImages, $imageKeys);
+        $missingImageKeys = array_diff_key($imageKeys, $this->productImages);
+        if ($missingImageKeys === []) {
+            return;
+        }
+
+        $products = Producto::query()
+            ->whereKey(collect(array_keys($missingImageKeys))
+                ->map(fn ($key) => $productIdsByImageKey[$key])
+                ->unique()
+                ->all())
+            ->get()
+            ->keyBy('id');
+
+        foreach (array_keys($missingImageKeys) as $imageKey) {
+            $product = $products->get($productIdsByImageKey[$imageKey]);
+            if (!$product) {
+                continue;
+            }
+
+            $imageUrl = null;
+            try {
+                $imageUrl = $product->imageUrl($colorIdsByImageKey[$imageKey] ?: null);
+            } catch (\Throwable) {
+                // An image lookup must never prevent the cart from rendering.
+            }
+
+            $this->productImages[$imageKey] = is_string($imageUrl)
+                && $imageUrl !== ''
+                && !str_starts_with($imageUrl, 'data:')
+                    ? $imageUrl
+                    : null;
+        }
     }
 
     public function getTotalProperty(): float

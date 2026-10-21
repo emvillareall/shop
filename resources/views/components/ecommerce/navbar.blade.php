@@ -1,4 +1,4 @@
-@php $cartCount = collect(session('carrito', []))->sum(fn($i) => (int) ($i['cantidad'] ?? 0)); @endphp
+@props(['cartCount' => 0])
 
 <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
     <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 lg:px-6" x-data="{ open: false }">
